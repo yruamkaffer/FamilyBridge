@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FamilyBridge · Configurações APS</title>
+<style>
+:root{font-family:"Segoe UI",Arial,sans-serif;color-scheme:dark;color:#f0f6f9;background:#0d1723;--mint:#63e0cc;--line:#344b5a}
+*{box-sizing:border-box}body{margin:0 auto;padding:21px 22px;max-width:760px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.brand{display:flex;align-items:center;gap:10px}.brand img{width:38px;height:38px}
+h1{font-size:21px;letter-spacing:-.5px;margin:0}p{color:#a6bbc5;font-size:12px;line-height:1.6;margin:8px 0 17px}.brand p{font-size:11px;margin:2px 0 0}
+.tag{font-size:11px;background:#1a393d;padding:6px 9px;border:1px solid #315c5a;border-radius:99px;color:var(--mint);white-space:nowrap}
+.card{padding:18px;background:#172635;border:1px solid var(--line);border-radius:15px;margin-bottom:13px;box-shadow:0 6px 20px #050c1530}
+h2{font-size:13px;letter-spacing:.15px;color:#f0f7f8;margin:0 0 16px}.num{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:8px;color:var(--mint);background:#203d41;border:1px solid #4a7977;margin-right:8px;font-size:11px}
+label{font-size:11px;font-weight:600;display:block;margin:0 0 7px;color:#c2d2d9}input,select{font:inherit;font-size:12px;width:100%;background:#0e1b28;color:#f0f6f9;border:1px solid #405767;padding:11px;border-radius:9px}
+input:focus{outline:2px solid var(--mint);outline-offset:1px}.field{margin-bottom:16px}.field:last-child{margin:0}
+.secret-row{display:flex;gap:7px}.secret-row input{min-width:0}.secret-row button{flex:0 0 72px}
+.check{display:flex;align-items:start;gap:9px;line-height:1.5;margin:12px 0 0}.check input{width:auto;margin-top:3px;accent-color:var(--mint)}
+.hint{font-size:11px;color:#92a8bf;margin:7px 0 0;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+button{font:inherit;font-size:12px;font-weight:650;cursor:pointer;border:1px solid #3e5a68;border-radius:9px;padding:12px;color:#eef5ff;background:#253c4b}button:hover:not(:disabled){background:#304e5f}
+button.primary{background:var(--mint);color:#09252a;border:0}button.primary:hover:not(:disabled){background:#93f3e1}button:disabled{opacity:.5;cursor:wait}.actions{display:flex;gap:9px}.actions button{flex:1}
+.danger{color:#ffc5c5;background:transparent;padding:9px 0;margin-top:8px}.status{display:none;padding:13px;font-size:12px;line-height:1.6;border-radius:9px;white-space:pre-wrap;margin-top:13px;overflow-wrap:anywhere}
+.status.success{display:block;background:#16382c;color:#b9f5d1}.status.error{display:block;background:#4c2225;color:#ffcacd}.status.wait{display:block;background:#213854;color:#c4defe}.status.warning{display:block;background:#483b20;color:#f5dea5}
+ul{padding-left:18px;margin:9px 0 0;font-size:12px;line-height:1.7;color:#cedcf1;overflow-wrap:anywhere}
+.scope{border-top:1px solid #314057;padding-top:12px;margin-top:16px}.badge{font-size:11px;font-weight:600;color:#aac5e8}
+@media(max-width:450px){body{padding:16px}.grid{grid-template-columns:1fr}.actions{flex-wrap:wrap}.actions button{flex-basis:100%}}
+</style>
+</head>
+<body>
+<header><div class="brand"><img src="icons/settings_32.png" alt=""><div><h1>Conectar à Autodesk</h1><p>FamilyBridge · Configurações APS</p></div></div><span class="tag">v0.8.1</span></header>
+<section class="card"><h2><span class="num">01</span>Credenciais da aplicação</h2>
+<div class="field"><label for="client_id">Client ID *</label><input id="client_id" type="text" autocomplete="off" spellcheck="false" maxlength="256" placeholder="Cole o Client ID da aplicação FamilyBridge"></div>
+<div class="field"><label for="secret">Client Secret *</label><div class="secret-row"><input id="secret" type="password" autocomplete="new-password" spellcheck="false" maxlength="4096" placeholder="Cole o Client Secret"><button id="reveal" type="button" aria-controls="secret" aria-pressed="false">Mostrar</button></div>
+<p class="hint" id="secret_hint">O segredo não será incluído no arquivo SketchUp ou no pacote BIM.</p>
+<label class="check"><input id="remember" type="checkbox"><span>Lembrar segredo neste Windows</span></label>
+<p class="hint" id="remember_hint">Ao marcar, o segredo é protegido com a conta do usuário do Windows. Sem marcar, vale apenas nesta sessão do SketchUp.</p></div>
+</section>
+<section class="card"><h2><span class="num">02</span>Conversor</h2>
+<div class="grid"><div class="field"><label for="owner">Owner / nickname APS (legado)</label><input id="owner" type="text" autocomplete="off" spellcheck="false" maxlength="256" placeholder="Conversão detecta automaticamente"></div>
+<div class="field"><label for="alias">Alias da aplicação</label><input id="alias" type="text" autocomplete="off" spellcheck="false" maxlength="64" value="dev"></div></div>
+<label for="engine">Versão de destino</label><select id="engine" disabled><option>Revit 2024</option></select>
+<p class="hint">A consulta verifica a disponibilidade. Nenhuma outra versão será escolhida automaticamente. Owner e alias ficam salvos para as próximas etapas.</p>
+</section>
+<div class="actions"><button id="save" type="button">Salvar configurações</button><button id="test" class="primary" type="button">Salvar e testar conexão</button></div>
+<button id="clear" class="danger" type="button">Remover configurações e segredo</button>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<ul id="engines" aria-label="Engines Revit disponíveis"></ul>
+<p class="scope"><span class="badge">Teste de conexão</span><br>O teste autentica na Autodesk e consulta os engines. A geração do RFA é iniciada pelo botão na tela principal da FamilyBridge.</p>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+let savedClient = '';
+let hasSecret = false;
+window.APSSettings = {
+  load(data) {
+    savedClient = data.client_id || '';
+    hasSecret = !!data.has_secret;
+    $('client_id').value = savedClient;
+    $('owner').value = data.owner || '';
+    $('alias').value = data.alias || 'dev';
+    $('remember').checked = !!data.remember;
+    $('remember').disabled = !data.can_remember;
+    $('secret').value = '';
+    $('secret').type = 'password';
+    $('reveal').textContent = 'Mostrar';
+    $('reveal').setAttribute('aria-pressed', 'false');
+    $('secret').placeholder = hasSecret ? '•••••••• — segredo mantido; preencha somente para trocar' : 'Cole o Client Secret';
+    $('secret_hint').textContent = hasSecret ? (data.remember ? 'Segredo salvo com proteção do Windows. Você já pode testar sem digitar novamente.' : 'Segredo mantido nesta sessão. Você já pode testar sem digitar novamente.') : 'O segredo não será incluído no arquivo SketchUp ou no pacote BIM.';
+    $('remember_hint').textContent = data.can_remember ? 'Ao marcar, o segredo é protegido com a conta do usuário do Windows. Sem marcar, vale apenas nesta sessão do SketchUp.' : 'Neste sistema o segredo vale apenas nesta sessão do SketchUp.';
+  },
+  data() {
+    return {client_id: $('client_id').value.trim(), secret: $('secret').value.trim(),
+      remember: $('remember').checked, owner: $('owner').value.trim(), alias: $('alias').value.trim()};
+  },
+  message(message, kind) { $('status').textContent = message; $('status').className = 'status ' + kind; },
+  busy(value) {
+    ['save','test','clear','client_id','secret','owner','alias','reveal'].forEach(id => { $(id).disabled = value; });
+    if ($('remember_hint').textContent.indexOf('Neste sistema') !== 0) $('remember').disabled = value;
+  },
+  valid(test) {
+    const data = this.data();
+    if (!/^[A-Za-z0-9_-]{1,256}$/.test(data.client_id)) { this.message('Preencha um Client ID válido.', 'error'); return false; }
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(data.alias)) { this.message('Preencha um alias com letras, números, _ ou -.', 'error'); return false; }
+    if (data.owner && !/^[A-Za-z0-9_-]{1,256}$/.test(data.owner)) { this.message('Owner inválido.', 'error'); return false; }
+    if ((test || data.remember) && !data.secret && !(hasSecret && data.client_id === savedClient)) { this.message('Preencha o Client Secret.', 'error'); return false; }
+    return true;
+  },
+  save() {
+    if (!this.valid(false)) return;
+    this.busy(true); $('engines').replaceChildren(); this.message('Salvando configurações…', 'wait');
+    window.sketchup.save_settings(JSON.stringify(this.data()));
+  },
+  test() {
+    if (!this.valid(true)) return;
+    this.busy(true); $('engines').replaceChildren(); this.message('Autenticando e consultando os engines Revit…', 'wait');
+    window.sketchup.test_connection(JSON.stringify(this.data()));
+  },
+  prepared(data) { this.load(data); this.busy(true); },
+  saved(data) { this.load(data); this.busy(false); this.message('Configurações salvas. Use Testar conexão para verificar o acesso.', 'success'); },
+  cleared(data) { this.load(data); this.busy(false); $('engines').replaceChildren(); this.message('Configurações e segredo removidos.', 'success'); },
+  result(data) {
+    this.busy(false); this.message(data.message, !data.ok ? 'error' : data.supports_2024 ? 'success' : 'warning');
+    $('engines').replaceChildren();
+    (data.engines || []).forEach(name => { const li = document.createElement('li'); li.textContent = name; $('engines').appendChild(li); });
+  },
+  fail(message) { this.busy(false); this.message(message, 'error'); }
+};
+$('save').addEventListener('click', () => APSSettings.save());
+$('test').addEventListener('click', () => APSSettings.test());
+$('clear').addEventListener('click', () => {
+  if (window.confirm('Remover as configurações e o segredo desta instalação do FamilyBridge?')) {
+    APSSettings.busy(true); window.sketchup.clear_settings();
+  }
+});
+$('reveal').addEventListener('click', () => {
+  const show = $('secret').type === 'password'; $('secret').type = show ? 'text' : 'password';
+  $('reveal').textContent = show ? 'Ocultar' : 'Mostrar'; $('reveal').setAttribute('aria-pressed', String(show));
+});
+$('client_id').addEventListener('input', () => {
+  if ($('client_id').value.trim() !== savedClient) $('secret').placeholder = 'Cole o segredo correspondente a este Client ID';
+});
+window.addEventListener('DOMContentLoaded', () => window.sketchup.get_settings());
+</script>
+</body>
+</html>

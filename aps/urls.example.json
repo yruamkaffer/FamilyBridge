@@ -1,0 +1,18 @@
+{
+  "geometry": {
+    "url": "https://storage.example/model.skp?GET_SIGNED_URL",
+    "upload_url": "https://storage.example/model.skp?PUT_SIGNED_URL"
+  },
+  "metadata": {
+    "url": "https://storage.example/metadata.json?GET_SIGNED_URL",
+    "upload_url": "https://storage.example/metadata.json?PUT_SIGNED_URL"
+  },
+  "familyTemplate": {
+    "url": "https://storage.example/template.rft?GET_SIGNED_URL",
+    "upload_url": "https://storage.example/template.rft?PUT_SIGNED_URL"
+  },
+  "result": {
+    "url": "https://storage.example/output.rfa?PUT_SIGNED_URL"
+  },
+  "result_download": "https://storage.example/output.rfa?GET_SIGNED_URL"
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ApplicationPackage SchemaVersion="1.0" Version="1.0">
+  <Components>
+    <RuntimeRequirements Platform="Fusion" />
+    <ComponentEntry AppName="FamilyBridgeStepToSat" AppDescription="Import STEP solid and export ACIS SAT" />
+  </Components>
+</ApplicationPackage>

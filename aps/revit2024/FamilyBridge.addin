@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="DBApplication">
+    <Name>FamilyBridgeAutomation</Name>
+    <Assembly>./FamilyBridge.Automation.dll</Assembly>
+    <AddInId>0ec8f7f3-daf4-4dfa-a6b6-d5b6a6d1ec08</AddInId>
+    <FullClassName>YruamKaffer.FamilyBridge.Automation.FamilyBridgeApp</FullClassName>
+    <VendorId>YKFD</VendorId>
+    <VendorDescription>Yruam Käffer de Faria</VendorDescription>
+  </AddIn>
+</RevitAddIns>

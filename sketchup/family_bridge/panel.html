@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FamilyBridge</title>
+<style>
+:root{color-scheme:dark;font-family:"Segoe UI",Arial,sans-serif;--bg:#0d1723;--card:#172635;--line:#344b5a;--text:#f0f6f9;--muted:#a6bbc5;--mint:#63e0cc;--amber:#ffbe87}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);margin:0;padding:21px 22px 16px;max-width:760px;margin-inline:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:11px}.brand img{width:38px;height:38px}
+h1{font-size:21px;margin:0;letter-spacing:-.6px}.sub{color:var(--muted);margin:2px 0 0;font-size:11px}
+.version{font-size:11px;color:var(--mint);background:#1a393d;padding:6px 9px;border:1px solid #315c5a;border-radius:99px;white-space:nowrap}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px;margin-bottom:13px;box-shadow:0 6px 20px #050c1530}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:13px}.step{display:inline-flex;align-items:center;justify-content:center;border:1px solid #4a7977;color:var(--mint);background:#203d41;border-radius:8px;width:25px;height:25px;font-size:11px;font-weight:700;margin-right:8px}
+h2{font-size:14px;margin:0;letter-spacing:.1px;color:#f0f7f8}.eyebrow{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px}
+.model-box{padding:12px;border-radius:10px;background:#0f1d29;border:1px solid #334a57}.filename{display:block;overflow-wrap:anywhere;font-size:13px}.meta{font-size:11px;line-height:1.55;color:var(--muted)}.meta strong{color:var(--text)}
+.step-file{display:flex;align-items:center;gap:7px;margin-top:9px;min-height:22px;overflow-wrap:anywhere}.dot{height:7px;width:7px;flex:0 0 7px;border-radius:50%;background:var(--amber)}.dot.ready{background:var(--mint)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}label{display:block;font-size:11px;margin-bottom:6px;color:#c2d2d9;font-weight:600}
+input,textarea,select{width:100%;border:1px solid #405767;border-radius:9px;background:#0e1b28;color:var(--text);padding:10px 11px;font:inherit;font-size:12px;min-width:0}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--mint);outline-offset:1px}input::placeholder,textarea::placeholder{color:#8098a6}
+textarea{resize:vertical;min-height:65px}.hint{font-size:11px;color:var(--muted);line-height:1.55;margin:9px 0 0}
+button{cursor:pointer;border:1px solid transparent;border-radius:9px;padding:10px 12px;font:inherit;font-weight:650;font-size:12px;transition:background .16s,transform .16s}button:hover:not(:disabled){transform:translateY(-1px)}
+button.primary{background:var(--mint);color:#09252a}button.primary:hover:not(:disabled){background:#93f3e1}button.secondary{background:#253c4b;color:#eaf4f5;border-color:#3e5a68}button.secondary:hover:not(:disabled){background:#304e5f}
+button:disabled{opacity:.5;cursor:wait}.select-step{width:100%;margin-top:11px}.actions{display:flex;gap:8px;margin-top:12px}.actions button{flex:1}.generate{width:100%;font-size:14px;padding:13px;margin-top:10px}
+.footer-note{margin:12px 0 2px;font-size:11px;line-height:1.55;color:var(--muted)}.footer-note strong{color:#d9f6f1}.settings-link{width:100%;margin-top:10px}
+#status{font-size:12px;line-height:1.45;white-space:pre-wrap;padding:12px;border-radius:9px;margin:0 0 12px;display:none;overflow-wrap:anywhere}
+#status.success{display:block;background:#16413a;color:#baf9e9}#status.error{display:block;background:#4c2528;color:#ffd5d6}
+@media(max-width:460px){body{padding:15px}.grid{grid-template-columns:1fr}.full{grid-column:auto}.actions{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="brand"><img src="icons/product_32.png" alt=""><div><h1>FamilyBridge</h1><p class="sub">Do sólido CAD à família BIM · Yruam Käffer</p></div></div><span class="version">v0.8.1</span></header>
+<section class="panel"><div class="panel-head"><h2><span class="step">01</span>Escolha o modelo</h2><span class="eyebrow">Geometria</span></div><div class="model-box"><strong class="filename" id="currentModel">Carregando…</strong><div class="meta"><span id="dimensions">Dimensões: —</span><br>Nome e dados do SketchUp · geometria do STEP sólido</div></div><button type="button" class="secondary select-step" onclick="window.sketchup.select_step()">Selecionar arquivo STEP</button><div class="meta step-file"><span class="dot"></span><span id="stepFile">Nenhum STEP selecionado</span></div></section>
+<section class="panel"><div class="panel-head"><h2><span class="step">02</span>Dados do produto</h2><span class="eyebrow">Informações BIM</span></div><div class="grid">
+<div><label for="manufacturer">Fabricante</label><input id="manufacturer" placeholder="Ex.: Fabricante XYZ" maxlength="1000"></div>
+<div><label for="code">Código do produto *</label><input id="code" placeholder="Ex.: 00801306" maxlength="1000"></div>
+<div class="full"><label for="name">Nome do produto *</label><input id="name" placeholder="Ex.: Misturador monocomando de cozinha" maxlength="1000"></div>
+<div><label for="collection">Linha / coleção</label><input id="collection" placeholder="Ex.: Linha Premium" maxlength="1000"></div>
+<div><label for="finish">Acabamento</label><input id="finish" placeholder="Ex.: Cromado" maxlength="1000"></div>
+<div class="full"><label for="website">Site / ficha técnica</label><input id="website" placeholder="https://…" maxlength="1000"></div>
+<div class="full"><label for="category">Categoria da família no Revit</label><select id="category"><option value="Generic Models">Modelos genéricos</option><option value="Plumbing Fixtures">Peças hidráulicas · torneiras, válvulas e banheiras</option><option value="Mechanical Equipment">Equipamento mecânico</option><option value="Furniture">Mobiliário</option></select></div>
+<div class="full"><label for="description">Descrição</label><textarea id="description" placeholder="Descrição para o catálogo BIM" maxlength="1000"></textarea></div>
+</div></section>
+<section class="panel"><div class="panel-head"><h2><span class="step">03</span>Gerar família</h2><span class="eyebrow">Autodesk APS</span></div>
+<p class="hint">O RFA será criado na versão 2024 e poderá ser aberto no Revit 2024 ou mais recente. A geração usa dois jobs da sua conta APS.</p>
+<div class="actions"><button id="save" class="secondary" onclick="FamilyBridge.save()">Salvar dados no SketchUp</button><button id="export" class="secondary" onclick="FamilyBridge.export()">Preparar pacote BIM</button></div>
+<button id="generate" class="primary generate" onclick="FamilyBridge.generate()">Gerar RFA na APS →</button>
+<button class="secondary settings-link" onclick="window.sketchup.open_settings()">⚙ Configurações APS</button>
+</section>
+<div id="status" role="status" aria-live="polite"></div>
+<p class="footer-note"><strong>Compatibilidade:</strong> o arquivo gerado não abre no Revit 2022. Não é necessário instalar Revit neste computador.</p>
+<script>
+const ids=['manufacturer','code','name','collection','finish','description','website','category'];
+window.FamilyBridge={
+  stepSelected:function(name){document.getElementById('stepFile').textContent='STEP selecionado: '+name;document.querySelector('.dot').classList.add('ready');},
+  load:function(data){document.getElementById('currentModel').textContent=data.file;
+    const d=data.dimensions_mm;document.getElementById('dimensions').textContent=`Dimensões XYZ: ${d.x} × ${d.y} × ${d.z} mm`;
+    ids.forEach(k=>{document.getElementById(k).value=data.saved[k]|| (k==='category'?'Generic Models':'');});},
+  data:function(){let d={};ids.forEach(k=>{d[k]=document.getElementById(k).value.trim()});return JSON.stringify(d)},
+  state:function(msg,error){const el=document.getElementById('status');el.className=error?'error':'success';el.textContent=msg;document.getElementById('save').disabled=false;document.getElementById('export').disabled=false;document.getElementById('generate').disabled=false;},
+  busy:function(){document.getElementById('save').disabled=true;document.getElementById('export').disabled=true;document.getElementById('generate').disabled=true;},
+  progress:function(msg){this.state(msg,false);this.busy();},
+  generate:function(){this.busy();window.sketchup.generate_rfa(this.data())},
+  done:function(msg){this.state(msg,false)},fail:function(msg){this.state(msg,true)},
+  save:function(){this.busy();window.sketchup.save_data(this.data())},
+  export:function(){this.busy();window.sketchup.export_data(this.data())}
+};
+window.addEventListener('DOMContentLoaded',()=>window.sketchup.get_model());
+</script>
+</body></html>
