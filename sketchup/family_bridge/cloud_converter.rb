@@ -29,8 +29,9 @@ module YruamKaffer
         @timer = nil
       end
 
-      def start
+      def start(revit_only: false)
         raise 'Já há uma conversão em andamento.' if @running
+        @revit_only = revit_only
         @client_id, @secret = @settings.credentials
         @redactions = [@client_id, @secret, Base64.strict_encode64("#{@client_id}:#{@secret}")]
         config = @settings.public_data
@@ -39,12 +40,19 @@ module YruamKaffer
         [@owner, @alias].each { |s| raise 'Owner/alias inválido.' unless s.to_s.match?(/\A[A-Za-z0-9_-]+\z/) }
         @bundle_file = File.join(__dir__, 'resources', 'FamilyBridgeAutomation2024.bundle.zip')
         raise 'Pacote do conversor ausente. Reinstale o FamilyBridge.' unless File.file?(@bundle_file)
-        %w[model.step metadata.json].each do |name|
+        (revit_only ? %w[bodies.fbdat steps.fbdat colors.json metadata.json] : %w[model.step metadata.json]).each do |name|
           path = File.join(@folder, name)
           raise "Arquivo ausente ou vazio: #{name}" unless File.file?(path) && File.size(path) > 0
           raise 'Este protótipo aceita entradas de até 100 MB por arquivo.' if File.size(path) > 100 * 1024 * 1024
         end
         metadata = parse(File.read(File.join(@folder, 'metadata.json'), encoding: 'UTF-8'))
+        if revit_only
+          colors = parse(File.read(File.join(@folder, 'colors.json'), encoding: 'UTF-8'))
+          raise 'Este pacote tem isolamento antigo; execute uma conversão completa para preservar a orientação das peças.' unless colors['isolation_coordinates'] == 'assembly_mm'
+          raise 'Manifesto de cores inválido.' unless colors['schema_version'] == 1 && colors['bodies'].is_a?(Array) && !colors['bodies'].empty?
+          validate_body_archive(File.binread(File.join(@folder, 'bodies.fbdat')), colors['bodies'].length)
+          validate_step_archive(File.binread(File.join(@folder, 'steps.fbdat')), colors['bodies'].length)
+        end
         @output_name = metadata.fetch('output_name', 'output.rfa').to_s
         basename = @output_name.sub(/\.rfa\z/i, '')
         if @output_name.length > 120 || basename.empty? ||
@@ -55,7 +63,7 @@ module YruamKaffer
         end
         @running = true
         @job = { 'state' => 'preparing', 'engine' => ENGINE }
-        @receipt = File.join(@folder, 'aps-job.json')
+        @receipt = File.join(@folder, revit_only ? 'aps-revit-job.json' : 'aps-job.json')
         raise 'Há um recibo de conversão nesta pasta. Confira o job anterior antes de reenviar.' if File.exist?(@receipt)
         @progress.call('Conectando à APS…')
         headers = {'Authorization' => 'Basic ' + Base64.strict_encode64("#{@client_id}:#{@secret}"),
@@ -69,7 +77,11 @@ module YruamKaffer
           @secret = nil
           # Exact engine check uses the endpoint, not only the first list page.
           api(DA, 'GET', '/engines/Autodesk.Revit%2B2024') do |_r|
-            api(DA, 'GET', '/engines/Autodesk.Fusion%2BLatest') { |_f| resolve_owner }
+            if @revit_only
+              resolve_owner
+            else
+              api(DA, 'GET', '/engines/Autodesk.Fusion%2BLatest') { |_f| resolve_owner }
+            end
           end
         end
       rescue StandardError => e
@@ -85,7 +97,7 @@ module YruamKaffer
         unless ok
           begin
             File.write(File.join(@folder, 'aps-diagnostic.json'), JSON.pretty_generate({
-              'version' => '0.8.1', 'request' => @http_context, 'http_status' => @http_status,
+              'version' => '0.9.2', 'request' => @http_context, 'http_status' => @http_status,
               'message' => sanitize(message), 'job_id' => @job && @job['id'],
               'remote_state' => @job && @job['state']
             }), mode: 'w:UTF-8')
@@ -174,11 +186,11 @@ module YruamKaffer
         api(DA, 'GET', '/forgeapps/me') do |nickname|
           raise 'A APS retornou um identificador de aplicação inválido.' unless nickname.is_a?(String) && nickname.match?(/\A[A-Za-z0-9_-]+\z/)
           @owner = nickname
-          @stage = :fusion
-          @engine = FUSION_ENGINE
-          @bundle = FUSION_BUNDLE
-          @activity = FUSION_ACTIVITY
-          @bundle_file = File.join(__dir__, 'resources', 'FamilyBridgeStepToSat.bundle.zip')
+          @stage = @revit_only ? :revit : :fusion
+          @engine = @revit_only ? ENGINE : FUSION_ENGINE
+          @bundle = @revit_only ? BUNDLE : FUSION_BUNDLE
+          @activity = @revit_only ? ACTIVITY : FUSION_ACTIVITY
+          @bundle_file = File.join(__dir__, 'resources', @revit_only ? 'FamilyBridgeAutomation2024.bundle.zip' : 'FamilyBridgeStepToSat.bundle.zip')
           publish_bundle
         end
       end
@@ -276,10 +288,12 @@ module YruamKaffer
         if @stage == :fusion
           parameters = {'InputFile' => {'verb' => 'get', 'required' => true, 'localName' => 'inputFile.step'},
                         'OutputFile' => {'verb' => 'put', 'required' => true, 'localName' => 'outputFile.sat'},
-                        'ColorFile' => {'verb' => 'put', 'required' => true, 'localName' => 'colors.json'}}
+                        'ColorFile' => {'verb' => 'put', 'required' => true, 'localName' => 'colors.json'},
+                        'BodyFiles' => {'verb' => 'put', 'required' => true, 'localName' => 'bodies.fbdat'},
+                        'StepFiles' => {'verb' => 'put', 'required' => true, 'localName' => 'steps.fbdat'}}
           command_line = []
         else
-          parameters = {'geometry' => 'model.sat', 'metadata' => 'metadata.json', 'colors' => 'colors.json',
+          parameters = {'geometry' => 'bodies.fbdat', 'steps' => 'steps.fbdat', 'metadata' => 'metadata.json', 'colors' => 'colors.json',
                         'familyTemplate' => 'template.rft', 'result' => 'output.rfa'}
                        .transform_values { |name| {'verb' => name == 'output.rfa' ? 'put' : 'get', 'required' => true, 'localName' => name} }
           command_line = ['"$(engine.path)\\revitcoreconsole.exe" /al "$(appbundles[' + @bundle + '].path)"']
@@ -310,7 +324,17 @@ module YruamKaffer
             @prefix = SecureRandom.hex(12)
             api(OSS, 'POST', '/buckets', {'bucketKey' => @bucket, 'policyKey' => 'transient'}, [200, 201, 409]) do |_r|
               @inputs = {}
-              upload_input('InputFile', 'model.step') { upload_input('metadata', 'metadata.json') { prepare_fusion_result } }
+              if @revit_only
+                upload_input('geometry', 'bodies.fbdat') do
+                  upload_input('steps', 'steps.fbdat') do
+                    upload_input('metadata', 'metadata.json') do
+                      upload_input('colors', 'colors.json') { prepare_revit_result }
+                    end
+                  end
+                end
+              else
+                upload_input('InputFile', 'model.step') { upload_input('metadata', 'metadata.json') { prepare_fusion_result } }
+              end
             end
           end
         end
@@ -343,14 +367,24 @@ module YruamKaffer
           @color_result_path = object_path('colors.json')
           api(OSS, 'GET', @color_result_path + '/signeds3upload?parts=1&minutesExpiration=60') do |color_signed|
             @color_output_key = color_signed.fetch('uploadKey')
-            args = {'InputFile' => @inputs.fetch('InputFile'),
-                    'OutputFile' => {'url' => signed.fetch('urls').fetch(0), 'verb' => 'put'},
-                    'ColorFile' => {'url' => color_signed.fetch('urls').fetch(0), 'verb' => 'put'}}
-            @job = {'state' => 'submitting', 'engine' => FUSION_ENGINE,
-                    'activity' => "#{@owner}.#{FUSION_ACTIVITY}+#{@alias}", 'stage' => 'fusion'}
-            File.write(@receipt, JSON.pretty_generate(@job), mode: 'wx:UTF-8')
-            @progress.call('Convertendo STEP em SAT e registrando as cores…')
-            submit_workitem(args)
+            @body_result_path = object_path('bodies.fbdat')
+            api(OSS, 'GET', @body_result_path + '/signeds3upload?parts=1&minutesExpiration=60') do |body_signed|
+              @body_output_key = body_signed.fetch('uploadKey')
+              @step_result_path = object_path('steps.fbdat')
+              api(OSS, 'GET', @step_result_path + '/signeds3upload?parts=1&minutesExpiration=60') do |step_signed|
+                @step_output_key = step_signed.fetch('uploadKey')
+                args = {'InputFile' => @inputs.fetch('InputFile'),
+                        'OutputFile' => {'url' => signed.fetch('urls').fetch(0), 'verb' => 'put'},
+                        'ColorFile' => {'url' => color_signed.fetch('urls').fetch(0), 'verb' => 'put'},
+                        'BodyFiles' => {'url' => body_signed.fetch('urls').fetch(0), 'verb' => 'put'},
+                        'StepFiles' => {'url' => step_signed.fetch('urls').fetch(0), 'verb' => 'put'}}
+                @job = {'state' => 'submitting', 'engine' => FUSION_ENGINE,
+                        'activity' => "#{@owner}.#{FUSION_ACTIVITY}+#{@alias}", 'stage' => 'fusion'}
+                File.write(@receipt, JSON.pretty_generate(@job), mode: 'wx:UTF-8')
+                @progress.call('Convertendo STEP e separando os corpos sólidos…')
+                submit_workitem(args)
+              end
+            end
           end
         end
       end
@@ -359,7 +393,7 @@ module YruamKaffer
         @result_path = object_path('output.rfa')
         api(OSS, 'GET', @result_path + '/signeds3upload?parts=1&minutesExpiration=60') do |signed|
           @output_key = signed.fetch('uploadKey')
-          args = {'geometry' => @inputs.fetch('geometry'),
+          args = {'geometry' => @inputs.fetch('geometry'), 'steps' => @inputs.fetch('steps'),
                   'metadata' => @inputs.fetch('metadata'), 'colors' => @inputs.fetch('colors'),
                   'familyTemplate' => {'url' => TEMPLATE, 'verb' => 'get'},
                   'result' => {'url' => signed.fetch('urls').fetch(0), 'verb' => 'put'}}
@@ -450,10 +484,75 @@ module YruamKaffer
               check(code)
               colors = parse(bytes)
               bodies = colors.fetch('bodies')
+              raise 'Fusion não confirmou as coordenadas das peças.' unless colors['isolation_coordinates'] == 'assembly_mm'
               raise 'Fusion não retornou cores por sólido.' unless colors['schema_version'] == 1 && bodies.is_a?(Array) && !bodies.empty?
               File.write(File.join(@folder, 'colors.json'), JSON.pretty_generate(colors), mode: 'wx:UTF-8')
-              upload_input('geometry', 'model.sat') do
-                upload_input('colors', 'colors.json') { prepare_revit_result }
+              finalize_fusion_bodies(bodies.length)
+            end
+          end
+        end
+      end
+
+      def validate_body_archive(raw, expected_count)
+        raise 'Arquivo dos SATs separados inválido ou maior que 100 MB.' unless raw.start_with?('FBB1') && raw.bytesize.between?(12, 100 * 1024 * 1024)
+        count = raw.byteslice(4, 4).unpack1('V')
+        raise 'Quantidade de SATs individuais difere das cores.' unless count == expected_count && (1..256).cover?(count)
+        offset = 8
+        count.times do |index|
+          raise 'Arquivo dos SATs individuais truncado.' if offset + 4 > raw.bytesize
+          size = raw.byteslice(offset, 4).unpack1('V')
+          offset += 4
+          raise "SAT individual #{index + 1} inválido." unless (100..100 * 1024 * 1024).cover?(size) && offset + size <= raw.bytesize
+          header = raw.byteslice(offset, 40).to_s
+          version = header[/\A\s*(\d+)\s+/, 1].to_i
+          raise "SAT individual #{index + 1} incompatível com Revit 2024." unless (1..700).cover?(version)
+          offset += size
+        end
+        raise 'Arquivo dos SATs individuais contém dados extras.' unless offset == raw.bytesize
+      end
+
+      def validate_step_archive(raw, expected_count)
+        raise 'Arquivo dos STEPs separados inválido ou maior que 100 MB.' unless raw.start_with?('FBS1') && raw.bytesize.between?(32, 100 * 1024 * 1024)
+        count = raw.byteslice(4, 4).unpack1('V')
+        raise 'Quantidade de STEPs individuais difere das cores.' unless count == expected_count && (1..256).cover?(count)
+        offset = 8
+        count.times do |index|
+          raise 'Arquivo dos STEPs individuais truncado.' if offset + 4 > raw.bytesize
+          size = raw.byteslice(offset, 4).unpack1('V')
+          offset += 4
+          raise "STEP individual #{index + 1} inválido." unless (20..100 * 1024 * 1024).cover?(size) && offset + size <= raw.bytesize
+          raise "STEP individual #{index + 1} sem cabeçalho ISO." unless raw.byteslice(offset, 12) == 'ISO-10303-21'
+          offset += size
+        end
+        raise 'Arquivo dos STEPs individuais contém dados extras.' unless offset == raw.bytesize
+      end
+
+      def finalize_fusion_bodies(expected_count)
+        api(OSS, 'POST', @body_result_path + '/signeds3upload', {'uploadKey' => @body_output_key}) do |_r|
+          api(OSS, 'GET', @body_result_path + '/signeds3download?minutesExpiration=60') do |download|
+            request(download.fetch('url'), 'GET') do |code, bytes|
+              check(code)
+              raw = bytes.to_s.b
+              validate_body_archive(raw, expected_count)
+              File.open(File.join(@folder, 'bodies.fbdat'), 'wbx') { |file| file.write(raw) }
+              finalize_fusion_steps(expected_count)
+            end
+          end
+        end
+      end
+
+      def finalize_fusion_steps(expected_count)
+        api(OSS, 'POST', @step_result_path + '/signeds3upload', {'uploadKey' => @step_output_key}) do |_r|
+          api(OSS, 'GET', @step_result_path + '/signeds3download?minutesExpiration=60') do |download|
+            request(download.fetch('url'), 'GET') do |code, bytes|
+              check(code)
+              raw = bytes.to_s.b
+              validate_step_archive(raw, expected_count)
+              File.open(File.join(@folder, 'steps.fbdat'), 'wbx') { |file| file.write(raw) }
+              upload_input('geometry', 'bodies.fbdat') do
+                upload_input('steps', 'steps.fbdat') do
+                  upload_input('colors', 'colors.json') { prepare_revit_result }
+                end
               end
             end
           end

@@ -1,7 +1,7 @@
 {
   "id": "FamilyBridgeRfa2024",
   "engine": "Autodesk.Revit+2024",
-  "description": "FamilyBridge - create RFA family from SAT ACIS and BIM metadata",
+  "description": "FamilyBridge - create RFA family from SAT or STEP and BIM metadata",
   "commandLine": [
     "$(engine.path)\\revitcoreconsole.exe /al \"$(appbundles[FamilyBridgeAutomation2024].path)\""
   ],
@@ -12,7 +12,12 @@
     "geometry": {
       "verb": "get",
       "required": true,
-      "localName": "model.sat"
+      "localName": "bodies.fbdat"
+    },
+    "steps": {
+      "verb": "get",
+      "required": true,
+      "localName": "steps.fbdat"
     },
     "metadata": {
       "verb": "get",

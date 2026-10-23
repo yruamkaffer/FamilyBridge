@@ -10,7 +10,7 @@ Criado automaticamente no pacote local. Exemplo fictício, sem credenciais:
 {
   "schema_version": 1,
   "output_name": "Torneira Exemplo.rfa",
-  "generator": {"name": "FamilyBridge", "version": "0.8.1", "author": "Yruam Käffer de Faria"},
+  "generator": {"name": "FamilyBridge", "version": "0.9.2", "author": "Yruam Käffer de Faria"},
   "product": {
     "manufacturer": "Fabricante Exemplo",
     "code": "EX-001",
@@ -65,9 +65,21 @@ Artefato produzido pelo Fusion e consumido pelo Revit:
 {
   "schema_version": 1,
   "bodies": [
-    {"dimensions_mm": [100.0, 80.0, 150.0], "volume_mm3": 123456.0, "rgb": [220, 220, 220]}
+    {"dimensions_mm": [80.0, 100.0, 150.0], "min_mm": [0.0, 0.0, 0.0], "max_mm": [100.0, 80.0, 150.0], "volume_mm3": 123456.0, "rgb": [220, 220, 220]}
   ]
 }
 ```
 
 Cada entrada corresponde a um corpo sólido; os valores RGB inteiros vão de 0 a 255. Os nomes `FamilyBridge RGB R-G-B` identificam materiais de cor usados nos elementos. O manifesto não guarda textura, brilho, transparência ou cor por face. Os valores acima são ilustrativos e não descrevem um produto real.
+
+## `bodies.fbdat`
+
+Arquivo binário produzido pelo Fusion, contendo um SAT separado por corpo na ordem das entradas de `colors.json`. Cabeçalho ASCII `FBB1`, contagem UInt32 little endian e, para cada SAT, comprimento UInt32 little endian mais bytes. O Revit não abre o arquivo diretamente: o worker valida e extrai cada SAT para importar individualmente. `model.sat` completo é mantido apenas para diagnóstico. Para repetir só o Revit na v0.9.2, são obrigatórios `bodies.fbdat` e `steps.fbdat` de um pacote v0.9.2+ com `isolation_coordinates: assembly_mm`.
+
+## `steps.fbdat`
+
+Arquivo binário FBS1: assinatura ASCII `FBS1`, contagem UInt32 little endian e, por corpo, comprimento UInt32 little endian e bytes de um STEP ISO-10303-21. A ordem acompanha `bodies.fbdat` e `colors.json`. O worker extrai cada STEP e tenta importá-lo quando o SAT correspondente não gera exatamente um sólido. O limite por arquivo é 100 MB.
+
+## Representação mista no RFA
+
+Cada corpo é tentado como sólido pelas rotas SAT, STEP e `ShapeImporter`. Se nenhuma devolver exatamente um sólido com volume positivo, somente esse corpo pode ser salvo como malha `DirectShape` com material RGB. O worker confere caixa (desvio < 5 mm) e volume da malha orientada (diferença < 2%) frente ao manifesto do Fusion e registra os índices que usaram malha. Uma malha não equivale a um sólido paramétrico.

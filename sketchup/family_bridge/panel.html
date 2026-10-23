@@ -29,7 +29,7 @@ button:disabled{opacity:.5;cursor:wait}.select-step{width:100%;margin-top:11px}.
 </style>
 </head>
 <body>
-<header><div class="brand"><img src="icons/product_32.png" alt=""><div><h1>FamilyBridge</h1><p class="sub">Do sólido CAD à família BIM · Yruam Käffer</p></div></div><span class="version">v0.8.1</span></header>
+<header><div class="brand"><img src="icons/product_32.png" alt=""><div><h1>FamilyBridge</h1><p class="sub">Do sólido CAD à família BIM · Yruam Käffer</p></div></div><span class="version">v0.9.2</span></header>
 <section class="panel"><div class="panel-head"><h2><span class="step">01</span>Escolha o modelo</h2><span class="eyebrow">Geometria</span></div><div class="model-box"><strong class="filename" id="currentModel">Carregando…</strong><div class="meta"><span id="dimensions">Dimensões: —</span><br>Nome e dados do SketchUp · geometria do STEP sólido</div></div><button type="button" class="secondary select-step" onclick="window.sketchup.select_step()">Selecionar arquivo STEP</button><div class="meta step-file"><span class="dot"></span><span id="stepFile">Nenhum STEP selecionado</span></div></section>
 <section class="panel"><div class="panel-head"><h2><span class="step">02</span>Dados do produto</h2><span class="eyebrow">Informações BIM</span></div><div class="grid">
 <div><label for="manufacturer">Fabricante</label><input id="manufacturer" placeholder="Ex.: Fabricante XYZ" maxlength="1000"></div>
@@ -45,6 +45,8 @@ button:disabled{opacity:.5;cursor:wait}.select-step{width:100%;margin-top:11px}.
 <p class="hint">O RFA será criado na versão 2024 e poderá ser aberto no Revit 2024 ou mais recente. A geração usa dois jobs da sua conta APS.</p>
 <div class="actions"><button id="save" class="secondary" onclick="FamilyBridge.save()">Salvar dados no SketchUp</button><button id="export" class="secondary" onclick="FamilyBridge.export()">Preparar pacote BIM</button></div>
 <button id="generate" class="primary generate" onclick="FamilyBridge.generate()">Gerar RFA na APS →</button>
+<button id="retry" class="secondary settings-link" onclick="FamilyBridge.retry()">Reprocessar só o Revit (corpos separados)</button>
+<p class="hint">Disponível para pacotes v0.9.2+ com SAT e STEP por corpo. Após falha no Revit, selecione a pasta original; envia só um novo job Revit.</p>
 <button class="secondary settings-link" onclick="window.sketchup.open_settings()">⚙ Configurações APS</button>
 </section>
 <div id="status" role="status" aria-live="polite"></div>
@@ -57,10 +59,11 @@ window.FamilyBridge={
     const d=data.dimensions_mm;document.getElementById('dimensions').textContent=`Dimensões XYZ: ${d.x} × ${d.y} × ${d.z} mm`;
     ids.forEach(k=>{document.getElementById(k).value=data.saved[k]|| (k==='category'?'Generic Models':'');});},
   data:function(){let d={};ids.forEach(k=>{d[k]=document.getElementById(k).value.trim()});return JSON.stringify(d)},
-  state:function(msg,error){const el=document.getElementById('status');el.className=error?'error':'success';el.textContent=msg;document.getElementById('save').disabled=false;document.getElementById('export').disabled=false;document.getElementById('generate').disabled=false;},
-  busy:function(){document.getElementById('save').disabled=true;document.getElementById('export').disabled=true;document.getElementById('generate').disabled=true;},
+  state:function(msg,error){const el=document.getElementById('status');el.className=error?'error':'success';el.textContent=msg;document.getElementById('save').disabled=false;document.getElementById('export').disabled=false;document.getElementById('generate').disabled=false;document.getElementById('retry').disabled=false;},
+  busy:function(){document.getElementById('save').disabled=true;document.getElementById('export').disabled=true;document.getElementById('generate').disabled=true;document.getElementById('retry').disabled=true;},
   progress:function(msg){this.state(msg,false);this.busy();},
   generate:function(){this.busy();window.sketchup.generate_rfa(this.data())},
+  retry:function(){this.busy();window.sketchup.retry_revit()},
   done:function(msg){this.state(msg,false)},fail:function(msg){this.state(msg,true)},
   save:function(){this.busy();window.sketchup.save_data(this.data())},
   export:function(){this.busy();window.sketchup.export_data(this.data())}

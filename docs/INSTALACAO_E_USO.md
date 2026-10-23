@@ -14,7 +14,7 @@ O RFA não é retrocompatível com Revit 2022. A disponibilidade de versões dos
 
 ## Instalação
 
-1. Baixe `FamilyBridge_v0.8.1.rbz` da entrega.
+1. Baixe `FamilyBridge_v0.9.2.rbz` da entrega.
 2. No SketchUp: **Janela → Gerenciador de Extensões → Instalar extensão**.
 3. Selecione o RBZ, aceite a instalação e abra o menu ou a barra de ferramentas **FamilyBridge**.
 4. Entre em **Configurações APS**. Informe Client ID e Client Secret da sua aplicação; Owner pode ficar vazio para usar o Client ID, e o alias padrão é `dev`. Clique **Salvar** e depois **Testar conexão**.
@@ -30,12 +30,16 @@ O segredo digitado some visualmente do campo após salvar; o estado **segredo ar
 4. Use **Salvar dados** se quiser apenas registrar os campos no SKP. Use **Gerar RFA na APS** para exportar o pacote e iniciar os WorkItems. Escolha a pasta de destino.
 5. Aguarde Fusion e Revit terminarem. Os trabalhos são sequenciais e podem consumir franquia. Não repita o envio enquanto houver um job ativo ou antes de conferir um recibo existente.
 
-A extensão cria uma pasta própria com `model.skp` (cópia SketchUp 2020), `model.step`, `metadata.json`, `README.txt` e, se a captura funcionar, `preview.png`. Depois acrescenta `model.sat`, `colors.json`, recibos e o RFA nomeado. Se já existir uma pasta com o mesmo código/nome, cria outra para não substituir a anterior.
+A extensão cria uma pasta própria com `model.skp` (cópia SketchUp 2020), `model.step`, `metadata.json`, `README.txt` e, se a captura funcionar, `preview.png`. Depois acrescenta `model.sat` (diagnóstico), `bodies.fbdat` (SATs separados), `steps.fbdat` (STEPs separados), `colors.json`, recibos e o RFA nomeado. Se já existir uma pasta com o mesmo código/nome, cria outra para não substituir a anterior.
+
+### Reprocessar apenas o Revit
+
+Se `aps-job.json` informa `state: success` e `downloaded: true`, enquanto `aps-revit-job.json` informa falha, clique **Reprocessar só o Revit** apenas se o pacote anterior tiver `bodies.fbdat` e `steps.fbdat` produzidos pela v0.9.2 ou posterior. A extensão valida o arquivo, cria uma pasta nova ao lado com os dois arquivos de corpos, `colors.json` e `metadata.json`, e envia somente um novo WorkItem Revit. Para pacotes anteriores à v0.9.2, execute a conversão **completa** do STEP; o isolamento antigo pode alterar a orientação das peças. Preserve a pasta anterior para diagnóstico. Cada novo WorkItem pode consumir franquia.
 
 ## Conferir no Revit
 
 1. Abra o RFA no Revit 2024 ou mais recente. Para avaliar materiais, use uma vista 3D com estilo visual que mostre cores/materiais, como **Sombreado** ou **Realista**. Uma vista de linhas ocultas não prova a ausência de cor.
-2. Selecione cada sólido e confira se é `FreeFormElement`, se a forma é volumétrica e se há um material RGB atribuído. Compare dimensões e volume com o STEP original; as dimensões em `metadata.json` são a caixa envolvente do **SKP**, então podem diferir do STEP.
+2. Selecione cada corpo: os sólidos devem ser `FreeFormElement`; somente corpos que não puderam ser importados como sólido podem aparecer como malha `DirectShape`. Confira o RGB e o resumo dos índices no relatório APS. Compare dimensões e volume com o STEP original; as dimensões em `metadata.json` são a caixa envolvente do **SKP**, então podem diferir do STEP.
 3. Abra **Tipos de família** para conferir `FB_Codigo`, `FB_Produto`, `FB_Fabricante`, `FB_Linha`, `FB_Acabamento`, `FB_Descricao` e `FB_Site`; confira também os parâmetros nativos disponíveis e a categoria em **Categoria e parâmetros da família**.
 4. Confira nome interno e nome do RFA. Se o SKP estava salvo, ambos devem refletir seu nome.
 

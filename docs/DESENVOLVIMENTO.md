@@ -4,13 +4,13 @@
 
 ## Preparar o repositório GitHub
 
-Extraia `FamilyBridge_projeto_v0.8.1.zip` e coloque o **conteúdo** da pasta `FamilyBridge_v0.8.1` na raiz do repositório. Inclua `sketchup/family_bridge/resources/FamilyBridgeAutomation2024.bundle.zip` e `FamilyBridgeStepToSat.bundle.zip`: o RBZ depende deles. Revise o histórico de commits e a área de staging para garantir que nenhum Client Secret, token, pacote de cliente ou relatório privado seja publicado.
+Extraia `FamilyBridge_projeto_v0.9.2.zip` e coloque o **conteúdo** da pasta `FamilyBridge_v0.9.2` na raiz de um repositório próprio do FamilyBridge; não misture com os fontes do FreeCAD Bridge. Inclua `sketchup/family_bridge/resources/FamilyBridgeAutomation2024.bundle.zip` e `FamilyBridgeStepToSat.bundle.zip`: o RBZ depende deles. `LICENSE.txt` e `NOTICE.md` também integram o RBZ em `family_bridge/resources/`. Revise o histórico de commits e a área de staging para garantir que nenhum Client Secret, token, pacote de cliente ou relatório privado seja publicado.
 
 ```sh
 git init
 git add .
 git status --short
-git commit -m "Adiciona FamilyBridge v0.8.1"
+git commit -m "Adiciona FamilyBridge v0.9.2"
 ```
 
 Crie o repositório na sua conta GitHub e configure o remoto conforme a URL exibida lá. Este projeto não escolhe licença automaticamente; veja `NOTICE.md`.
@@ -26,7 +26,7 @@ ruby tests/test_export.rb
 ruby tests/test_cloud_converter.rb
 ```
 
-`test_export.rb` substitui SketchUp por objetos de teste. `test_cloud_converter.rb` simula respostas HTTP, incluindo dois WorkItems e erro SAT. `test_bundle.py` compara os contratos de Activity e inspeciona os bundles. `test_aps_client.py` cobre o cliente Python legado; seu sucesso não prova o caminho Ruby de produção. Nenhum teste local valida aparência final ou abertura de RFA no Revit.
+`test_export.rb` substitui SketchUp por objetos de teste. `test_cloud_converter.rb` simula respostas HTTP, incluindo dois WorkItems, arquivos FBB1/FBS1 e erro SAT/STEP. `test_bundle.py` compara os contratos de Activity e inspeciona os bundles. `test_aps_client.py` cobre o cliente Python legado; seu sucesso não prova o caminho Ruby de produção. Nenhum teste local valida aparência final ou abertura de RFA no Revit.
 
 ## Gerar a entrega
 
@@ -34,7 +34,7 @@ ruby tests/test_cloud_converter.rb
 python3 build_release.py --output dist
 ```
 
-O script produz `FamilyBridge_v0.8.1.rbz` na raiz e `dist/FamilyBridge_projeto_v0.8.1.zip`. O RBZ inclui os arquivos de `sketchup/` na raiz do arquivo instalável; o ZIP contém documentação, fontes, testes, bundles e o próprio RBZ. O empacotador usa uma lista explícita de arquivos para evitar credenciais, saídas de jobs e caches. Confira sempre `unzip -l` ou equivalente antes de publicar.
+O script produz `FamilyBridge_v0.9.2.rbz` na raiz e `dist/FamilyBridge_projeto_v0.9.2.zip`. O RBZ inclui os arquivos de `sketchup/` e as cópias da licença e do aviso; o ZIP contém documentação, fontes, testes, bundles e o próprio RBZ. O empacotador usa uma lista explícita de arquivos para evitar credenciais, saídas de jobs e caches. Confira sempre `unzip -l` ou equivalente antes de publicar.
 
 ## Alterar os workers
 
@@ -46,7 +46,7 @@ O cliente `aps/familybridge.py` e `aps/urls.example.json` pertencem ao protótip
 
 ## Critério de validação de uma nova versão
 
-Execute os quatro comandos de teste, gere e examine os arquivos de distribuição e instale o RBZ no SketchUp. Em uma conta APS de teste, envie um STEP sólido com dois corpos de cores distinguíveis, veja ambos os WorkItems e inspecione no Revit 2024+: sólidos, materiais RGB, categoria, parâmetros, dimensões e nome interno. Documente o resultado e preserve os relatórios sem credenciais. Até essa execução, descreva suporte RGB como não homologado.
+Execute os quatro comandos de teste, gere e examine os arquivos de distribuição e instale o RBZ no SketchUp. Dois produtos de nove corpos já concluíram a v0.9.2 na APS; um deles abriu no Revit. Veja [Validação](VALIDACAO_APS.md). Para a homologação geométrica, inspecione em Revit 2024+ a quantidade de sólidos `FreeFormElement` e de malhas `DirectShape`, materiais RGB, categoria, parâmetros, dimensões e nome interno. Documente o resultado e preserve os relatórios sem credenciais. Investigue a divergência da peça 8 diretamente no CAD de origem. Pacotes anteriores à v0.9.2 exigem novo Fusion para preservar a orientação da montagem.
 
 ## Referências primárias
 

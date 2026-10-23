@@ -10,7 +10,7 @@ require_relative 'cloud_converter'
 
 module YruamKaffer
   module FamilyBridge
-    VERSION = '0.8.1' unless const_defined?(:VERSION)
+    VERSION = '0.9.2' unless const_defined?(:VERSION)
     DICT = 'YruamKaffer_FamilyBridge' unless const_defined?(:DICT)
     FIELDS = %w[manufacturer code name collection finish description website category].freeze unless const_defined?(:FIELDS)
 
@@ -181,6 +181,39 @@ module YruamKaffer
                 @cloud_converter.start
               else
                 dialog.execute_script("FamilyBridge.done('Conversão cancelada antes de qualquer envio.')")
+              end
+            rescue StandardError => e
+              dialog.execute_script("FamilyBridge.fail(#{JSON.generate(e.message)})")
+            end
+          end
+          dialog.add_action_callback('retry_revit') do |_context|
+            begin
+              raise 'Há uma conversão em andamento.' if @cloud_converter && @cloud_converter.running
+              settings_store.credentials
+              source = UI.select_directory(title: 'Escolha o pacote original v0.9.2+ com SAT e STEP separados')
+              if source.nil? || source.empty?
+                dialog.execute_script("FamilyBridge.done(#{JSON.generate('Reprocessamento cancelado.')})")
+              else
+                fusion = JSON.parse(File.read(File.join(source, 'aps-job.json'), encoding: 'UTF-8'))
+                revit = JSON.parse(File.read(File.join(source, 'aps-revit-job.json'), encoding: 'UTF-8'))
+                raise 'O job Fusion anterior não foi confirmado.' unless fusion['stage'] == 'fusion' && fusion['state'] == 'success' && fusion['downloaded'] == true
+                raise 'O job Revit anterior não está marcado como falho; confira o estado na APS.' unless revit['stage'] == 'revit' && revit['state'].to_s.start_with?('failed')
+                %w[bodies.fbdat steps.fbdat colors.json metadata.json].each do |name|
+                  raise "Arquivo ausente ou vazio: #{name}" unless File.file?(File.join(source, name)) && File.size(File.join(source, name)) > 0
+                end
+                folder = Dir.mktmpdir('FamilyBridge_revit_', File.dirname(source))
+                %w[bodies.fbdat steps.fbdat colors.json metadata.json].each { |name| FileUtils.cp(File.join(source, name), folder) }
+                File.write(File.join(folder, 'README.txt'), "Reprocessamento Revit a partir dos SATs e STEPs separados de #{source}.\nUm novo WorkItem Revit será enviado; o Fusion não será executado.\n", mode: 'w:UTF-8')
+                progress = proc { |message| dialog.execute_script("FamilyBridge.progress(#{JSON.generate(message)})") if @dialog.equal?(dialog) }
+                completion = proc do |ok, message|
+                  if @dialog.equal?(dialog)
+                    dialog.execute_script("FamilyBridge.#{ok ? 'done' : 'fail'}(#{JSON.generate(message)})")
+                  else
+                    UI.messagebox(message)
+                  end
+                end
+                @cloud_converter = CloudConverter.new(folder, settings_store, progress, completion)
+                @cloud_converter.start(revit_only: true)
               end
             rescue StandardError => e
               dialog.execute_script("FamilyBridge.fail(#{JSON.generate(e.message)})")

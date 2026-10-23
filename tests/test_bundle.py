@@ -8,17 +8,41 @@ base = Path(__file__).resolve().parents[1]
 activity = json.loads((base / 'aps/revit2024/activity.template.json').read_text())
 assert activity['engine'] == 'Autodesk.Revit+2024'
 assert {v['localName'] for v in activity['parameters'].values()} == {
-    'output.rfa', 'model.sat', 'metadata.json', 'colors.json', 'template.rft'
+    'output.rfa', 'bodies.fbdat', 'steps.fbdat', 'metadata.json', 'colors.json', 'template.rft'
 }
 cs = (base / 'aps/revit2024/FamilyBridgeApp.cs').read_text()
-for term in ('SATImportOptions', 'FreeFormElement.Create', 'family.Delete(importId)', 'output.rfa'):
+for term in ('SATImportOptions', 'STEPImportOptions', 'ShapeImporterSourceFormat.SAT', 'DescribeGeometry(',
+             'TessellatedShapeBuilderTarget.Mesh', 'CreateMeshFallback(', 'DirectShape.CreateElement',
+             'FreeFormElement.Create', 'family.Delete(importId)',
+             'bodies.fbdat', 'steps.fbdat', 'output.rfa',
+             'box.Transform.OfPoint', 'WorldBounds(solid, out worldMin, out worldMax)',
+             'volumeDifference >= 0.02', 'largestDimensionDifference >= 5.0',
+             'largestAxisDifference >= 5.0'):
     assert term in cs
 ET.parse(base / 'aps/revit2024/PackageContents.xml')
 ET.parse(base / 'aps/fusion/FamilyBridgeStepToSat/PackageContents.xml')
+fusion_source = (base / 'aps/fusion/FamilyBridgeStepToSat/Contents/main.ts').read_bytes()
+assert b'moveToComponent(occurrence)' in fusion_source
+assert b'addNewComponent(adsk.core.Matrix3D.create())' in fusion_source
+assert b'assertSameAssemblyBox(bodies[i], isolated, i + 1)' in fusion_source
+assert b'createSATExportOptions(filename, moved.parentComponent)' in fusion_source
+assert b'createSTEPExportOptions(stepName, moved.parentComponent)' in fusion_source
+assert b'FBS1' not in fusion_source or b'70, 66, 83, 49' in fusion_source
+assert b'Buffer' not in fusion_source and b'toString("ascii")' not in fusion_source
 for resource, required in (
     ('FamilyBridgeAutomation2024.bundle.zip', 'FamilyBridgeAutomation.bundle/Contents/FamilyBridge.Automation.dll'),
     ('FamilyBridgeStepToSat.bundle.zip', 'FamilyBridgeStepToSat/Contents/main.ts'),
 ):
     with ZipFile(base / 'sketchup/family_bridge/resources' / resource) as bundle:
         assert required in bundle.namelist()
-print('OK: engines, SAT sólido, manifestos e AppBundles.')
+        if resource == 'FamilyBridgeAutomation2024.bundle.zip':
+            worker = bundle.read(required)
+            # The previous release accidentally shipped a 0.5.0 DLL that read
+            # model.skp, although source and Activity already passed model.sat.
+            for literal in ('worker 0.9.0 solid-first mesh fallback RGB', 'bodies.fbdat', 'steps.fbdat', 'colors.json',
+                            'FreeFormElements sólidos criados', 'individuais recebidos'):
+                assert literal.encode('utf-16le') in worker, literal
+            assert 'model.skp'.encode('utf-16le') not in worker
+        else:
+            assert bundle.read(required) == fusion_source
+print('OK: engines, SAT/STEP, manifestos e AppBundles.')

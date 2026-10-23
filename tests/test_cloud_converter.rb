@@ -42,6 +42,13 @@ class SolidPipelineTest < Minitest::Test
     @sat = '700 0 1 0\nbody $-1 solid\n' + 'x' * 100
     @converter = YruamKaffer::FamilyBridge::CloudConverter.new(@folder, Settings.new, proc { |_| }, proc { |ok, msg| @results << [ok, msg] })
   end
+  def archive
+    'FBB1'.b + [1, @sat.bytesize].pack('VV') + @sat.b
+  end
+  def step_archive
+    step = 'ISO-10303-21;HEADER;ENDSEC;DATA;ENDSEC;END-ISO-10303-21;'.b
+    'FBS1'.b + [1, step.bytesize].pack('VV') + step
+  end
   def teardown; FileUtils.remove_entry(@folder); end
   def response(req)
     path = URI(req.url).path
@@ -61,6 +68,8 @@ class SolidPipelineTest < Minitest::Test
     if path.end_with?('/signeds3download')
       return [200, {'url' => path.include?('output.sat') ? 'https://downloads.example/sat' :
                             path.include?('colors.json') ? 'https://downloads.example/colors' :
+                            path.include?('bodies.fbdat') ? 'https://downloads.example/bodies' :
+                            path.include?('steps.fbdat') ? 'https://downloads.example/steps' :
                             path.include?('output.rfa') ? 'https://downloads.example/rfa' : 'https://downloads.example/input'}]
     end
     if path.end_with?('/workitems')
@@ -69,7 +78,9 @@ class SolidPipelineTest < Minitest::Test
     end
     return [200, {'status' => 'success'}] if path.include?('/workitems/')
     return [200, @sat] if req.url == 'https://downloads.example/sat'
-    return [200, {'schema_version' => 1, 'bodies' => [{'dimensions_mm' => [10, 10, 10],
+    return [200, archive] if req.url == 'https://downloads.example/bodies'
+    return [200, step_archive] if req.url == 'https://downloads.example/steps'
+    return [200, {'schema_version' => 1, 'isolation_coordinates' => 'assembly_mm', 'bodies' => [{'dimensions_mm' => [10, 10, 10],
               'volume_mm3' => 1000, 'rgb' => [230, 180, 100]}]}] if req.url == 'https://downloads.example/colors'
     return [200, MAGIC + 'RFA'] if req.url == 'https://downloads.example/rfa'
     raise "Unhandled #{req.method} #{path}"
@@ -92,9 +103,11 @@ class SolidPipelineTest < Minitest::Test
     assert_equal 2, @jobs
     assert_equal 'Client123.FamilyBridgeStepToSatActivity+dev', job_payloads[0]['activityId']
     assert_equal 'Client123.FamilyBridgeRfa2024+dev', job_payloads[1]['activityId']
-    assert_equal %w[ColorFile InputFile OutputFile], job_payloads[0]['arguments'].keys.sort
-    assert_equal %w[colors familyTemplate geometry metadata result], job_payloads[1]['arguments'].keys.sort
+    assert_equal %w[BodyFiles ColorFile InputFile OutputFile StepFiles], job_payloads[0]['arguments'].keys.sort
+    assert_equal %w[colors familyTemplate geometry metadata result steps], job_payloads[1]['arguments'].keys.sort
     assert_equal @sat, File.binread(File.join(@folder, 'model.sat'))
+    assert_equal archive, File.binread(File.join(@folder, 'bodies.fbdat'))
+    assert_equal step_archive, File.binread(File.join(@folder, 'steps.fbdat'))
     assert_equal [230, 180, 100], JSON.parse(File.read(File.join(@folder, 'colors.json')))['bodies'][0]['rgb']
     assert File.binread(File.join(@folder, 'bucha_fix_piso.rfa')).start_with?(MAGIC)
     %w[aps-job.json aps-revit-job.json].each do |receipt|
@@ -116,5 +129,64 @@ class SolidPipelineTest < Minitest::Test
     flow
     assert_equal 0, @jobs
     assert_empty Request.all
+  end
+  def test_revit_only_uses_cached_sat_and_step_without_fusion_job
+    File.binwrite(File.join(@folder, 'bodies.fbdat'), archive)
+    File.binwrite(File.join(@folder, 'steps.fbdat'), step_archive)
+    File.write(File.join(@folder, 'colors.json'), JSON.generate('schema_version' => 1, 'isolation_coordinates' => 'assembly_mm',
+      'bodies' => [{'dimensions_mm' => [10, 10, 10], 'volume_mm3' => 1000, 'rgb' => [230, 180, 100]}]))
+    @converter.start(revit_only: true)
+    count = 0
+    until Request.pending.empty?
+      raise 'Request loop' if (count += 1) > 80
+      req = Request.pending.shift
+      req.reply(*response(req))
+    end
+    assert @results.first.first, @results.inspect
+    assert_equal 1, @jobs
+    assert_equal 'Client123.FamilyBridgeRfa2024+dev', job_payloads[0]['activityId']
+    assert_equal %w[colors familyTemplate geometry metadata result steps], job_payloads[0]['arguments'].keys.sort
+    refute File.exist?(File.join(@folder, 'aps-job.json'))
+    assert File.file?(File.join(@folder, 'aps-revit-job.json'))
+  end
+  def test_revit_only_rejects_previous_isolation_before_workitem
+    File.binwrite(File.join(@folder, 'bodies.fbdat'), archive)
+    File.binwrite(File.join(@folder, 'steps.fbdat'), step_archive)
+    File.write(File.join(@folder, 'colors.json'), JSON.generate('schema_version' => 1,
+      'bodies' => [{'dimensions_mm' => [10, 10, 10], 'volume_mm3' => 1000, 'rgb' => [230, 180, 100]}]))
+    @converter.start(revit_only: true)
+    assert_equal 0, @jobs
+    assert_empty Request.all
+    refute @results.first.first
+    assert_includes @results.first.last, 'conversão completa'
+  end
+  def test_revit_only_rejects_old_package_without_sat_and_step_archives
+    File.binwrite(File.join(@folder, 'model.sat'), @sat)
+    File.write(File.join(@folder, 'colors.json'), JSON.generate('schema_version' => 1, 'isolation_coordinates' => 'assembly_mm',
+      'bodies' => [{'rgb' => [230, 180, 100]}]))
+    @converter.start(revit_only: true)
+    assert_equal 0, @jobs
+    assert_empty Request.all
+    refute @results.first.first
+  end
+  def test_revit_only_rejects_truncated_body_archive_before_workitem
+    File.binwrite(File.join(@folder, 'bodies.fbdat'), archive.byteslice(0, archive.bytesize - 4))
+    File.binwrite(File.join(@folder, 'steps.fbdat'), step_archive)
+    File.write(File.join(@folder, 'colors.json'), JSON.generate('schema_version' => 1, 'isolation_coordinates' => 'assembly_mm',
+      'bodies' => [{'rgb' => [230, 180, 100]}]))
+    @converter.start(revit_only: true)
+    assert_equal 0, @jobs
+    assert_empty Request.all
+    refute @results.first.first
+  end
+  def test_revit_only_rejects_truncated_step_archive_before_workitem
+    File.binwrite(File.join(@folder, 'bodies.fbdat'), archive)
+    File.binwrite(File.join(@folder, 'steps.fbdat'), step_archive.byteslice(0, step_archive.bytesize - 4))
+    File.write(File.join(@folder, 'colors.json'), JSON.generate('schema_version' => 1, 'isolation_coordinates' => 'assembly_mm',
+      'bodies' => [{'rgb' => [230, 180, 100]}]))
+    @converter.start(revit_only: true)
+    assert_equal 0, @jobs
+    assert_empty Request.all
+    refute @results.first.first
   end
 end

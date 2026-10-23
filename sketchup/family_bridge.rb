@@ -7,7 +7,7 @@ module YruamKaffer
     unless file_loaded?(__FILE__)
       extension = SketchupExtension.new('FamilyBridge', 'family_bridge/main')
       extension.description = 'Prepara modelos SketchUp e dados BIM para geração de famílias RFA com Revit Automation.'
-      extension.version = '0.8.1'
+      extension.version = '0.9.2'
       extension.creator = 'Yruam Käffer de Faria'
       extension.copyright = '© 2026 Yruam Käffer de Faria'
       Sketchup.register_extension(extension, true)

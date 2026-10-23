@@ -3,7 +3,7 @@ from pathlib import Path
 import zipfile
 
 BASE = Path(__file__).resolve().parent
-VERSION = '0.8.1'
+VERSION = '0.9.2'
 
 
 def build(destination):
@@ -14,10 +14,13 @@ def build(destination):
         for file in sorted((BASE / 'sketchup').rglob('*')):
             if file.is_file():
                 archive.write(file, file.relative_to(BASE / 'sketchup'))
+        # Redistributed copies of the software include the project license and notices.
+        for name in ('LICENSE.txt', 'NOTICE.md'):
+            archive.write(BASE / name, 'family_bridge/resources/' + name)
     output = destination / ('FamilyBridge_projeto_v' + VERSION + '.zip')
     # Allowlist keeps local configuration, test caches and job receipts private.
-    paths = [BASE / name for name in ('README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
-                                      'SECURITY.md', 'NOTICE.md', '.gitignore',
+    paths = [BASE / name for name in ('README.md', 'README.en.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
+                                      'SECURITY.md', 'LICENSE.txt', 'NOTICE.md', '.gitignore',
                                       'build_release.py', rbz.name)]
     for root in ('sketchup', 'tests', 'aps', 'docs'):
         paths += [p for p in (BASE / root).rglob('*') if p.is_file()
