@@ -30,6 +30,7 @@ jobs:
           Compress-Archive -Path aps/fusion/FamilyBridgeStepToSat -DestinationPath sketchup/family_bridge/resources/FamilyBridgeStepToSat.bundle.zip -Force
           python tests/test_bundle.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path .gitignore)) { New-Item -ItemType File .gitignore | Out-Null }
           python build_release.py --output dist
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
