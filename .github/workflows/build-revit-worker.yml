@@ -35,7 +35,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
-          name: FamilyBridge-v0.9.4
-          path: |
-            dist/FamilyBridge_projeto_v0.9.4.zip
-            FamilyBridge_v0.9.4.rbz
+          name: FamilyBridge-v0.9.5
+path: |
+  dist/FamilyBridge_projeto_v0.9.5.zip
+  FamilyBridge_v0.9.5.rbz
