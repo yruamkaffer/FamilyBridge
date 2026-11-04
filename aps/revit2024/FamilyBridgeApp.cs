@@ -1,4 +1,4 @@
-// FamilyBridge Revit 2024 APS — compilado contra referências Revit 2024; ainda não homologado na APS.
+// FamilyBridge Revit 2024 APS — compilar contra referências Revit 2024 e validar na APS.
 // Autor: Yruam Käffer de Faria (2026)
 using System;
 using System.Collections.Generic;
@@ -54,7 +54,7 @@ namespace YruamKaffer.FamilyBridge.Automation
 
         private static void Run(Application app)
         {
-            Console.WriteLine("[FamilyBridge] worker 0.9.2 solid-first mesh fallback RGB; engine Revit " + app.VersionNumber);
+            Console.WriteLine("[FamilyBridge] worker 0.9.4 solid-first STEP retry RGB; engine Revit " + app.VersionNumber);
             if (app.VersionNumber != "2024") throw new InvalidOperationException("O conversor exige engine Revit 2024.");
             string workDir = Directory.GetCurrentDirectory();
             string archivePath = Path.Combine(workDir, BodyArchiveFile);
@@ -122,6 +122,7 @@ namespace YruamKaffer.FamilyBridge.Automation
                         Element imported = family.GetElement(importId);
                         if (imported == null) throw new InvalidOperationException("Importação sem elemento: corpo " + (i + 1));
                         var solids = new List<Solid>();
+                        bool stepImported = false;
                         CollectSolids(imported.get_Geometry(new Options { ComputeReferences = true }), solids);
                         Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) + ": sólidos Revit = " + solids.Count);
                         if (solids.Count != 1)
@@ -130,6 +131,7 @@ namespace YruamKaffer.FamilyBridge.Automation
                                 " sólidos; tentando STEP individual.");
                             family.Delete(importId);
                             importId = family.Import(stepParts[i], new STEPImportOptions(), targetView);
+                            stepImported = true;
                             if (importId == ElementId.InvalidElementId)
                                 throw new InvalidOperationException("STEP individual não importado: corpo " + (i + 1));
                             imported = family.GetElement(importId);
@@ -184,6 +186,7 @@ namespace YruamKaffer.FamilyBridge.Automation
                                 Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) + ": sólido recuperado via ShapeImporter SAT.");
                             }
                         }
+                    validateSolid:
                         Solid solid = solids[0];
                         ColorBody matched = colors.Bodies[i];
                         // Solid bounds are local coordinates plus a transform, not world bounds.
@@ -220,6 +223,38 @@ namespace YruamKaffer.FamilyBridge.Automation
                             double.IsNaN(largestAxisDifference) || double.IsInfinity(largestAxisDifference) ||
                             volumeDifference >= 0.02 || largestDimensionDifference >= 5.0 || largestAxisDifference >= 5.0)
                         {
+                            if (!stepImported)
+                            {
+                                // A SAT can look like a solid yet fail the geometry check.
+                                // Try the paired STEP before rejecting this body or accepting
+                                // an inaccurate SAT volume. The original import is removed.
+                                Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) +
+                                    ": sólido SAT fora da tolerância; tentando STEP individual.");
+                                family.Delete(importId);
+                                importId = family.Import(stepParts[i], new STEPImportOptions(), targetView);
+                                if (importId == ElementId.InvalidElementId)
+                                    throw new InvalidOperationException("STEP individual não importado: corpo " + (i + 1));
+                                imported = family.GetElement(importId);
+                                if (imported == null)
+                                    throw new InvalidOperationException("STEP importado sem elemento: corpo " + (i + 1));
+                                stepImported = true;
+                                solids.Clear();
+                                CollectSolids(imported.get_Geometry(new Options { ComputeReferences = true }), solids);
+                                Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) +
+                                    ": sólidos Revit via STEP após desvio SAT = " + solids.Count);
+                                if (solids.Count == 1) goto validateSolid;
+                                var alternateMeshes = new List<Mesh>();
+                                CollectMeshes(imported.get_Geometry(new Options { ComputeReferences = true }), alternateMeshes);
+                                if (alternateMeshes.Count == 1)
+                                {
+                                    CreateMeshFallback(family, alternateMeshes[0], matched, materialCache, i + 1);
+                                    meshBodies.Add(i + 1);
+                                    family.Delete(importId);
+                                    continue;
+                                }
+                                Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) +
+                                    ": STEP alternativo sem sólido único ou malha única.");
+                            }
                             geometryDifferences.Add("corpo " + (i + 1) + " (volume " +
                                 (volumeDifference * 100).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
                                 "%, caixa " + Math.Max(largestDimensionDifference, largestAxisDifference).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " mm)");

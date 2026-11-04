@@ -23,10 +23,13 @@ ET.parse(base / 'aps/revit2024/PackageContents.xml')
 ET.parse(base / 'aps/fusion/FamilyBridgeStepToSat/PackageContents.xml')
 fusion_source = (base / 'aps/fusion/FamilyBridgeStepToSat/Contents/main.ts').read_bytes()
 assert b'moveToComponent(occurrence)' in fusion_source
+assert b'copyToComponent(occurrence)' in fusion_source
+assert fusion_source.index(b'copyToComponent(occurrence)') < fusion_source.index(b'moveToComponent(occurrence)')
+assert b'Isolating body ${i + 1}/${sources.length}' in fusion_source
 assert b'addNewComponent(adsk.core.Matrix3D.create())' in fusion_source
 assert b'assertSameAssemblyBox(bodies[i], isolated, i + 1)' in fusion_source
-assert b'createSATExportOptions(filename, moved.parentComponent)' in fusion_source
-assert b'createSTEPExportOptions(stepName, moved.parentComponent)' in fusion_source
+assert b'createSATExportOptions(filename, isolatedBody.parentComponent)' in fusion_source
+assert b'createSTEPExportOptions(stepName, isolatedBody.parentComponent)' in fusion_source
 assert b'FBS1' not in fusion_source or b'70, 66, 83, 49' in fusion_source
 assert b'Buffer' not in fusion_source and b'toString("ascii")' not in fusion_source
 for resource, required in (
@@ -39,7 +42,7 @@ for resource, required in (
             worker = bundle.read(required)
             # The previous release accidentally shipped a 0.5.0 DLL that read
             # model.skp, although source and Activity already passed model.sat.
-            for literal in ('worker 0.9.0 solid-first mesh fallback RGB', 'bodies.fbdat', 'steps.fbdat', 'colors.json',
+            for literal in ('worker 0.9.4 solid-first STEP retry RGB', 'bodies.fbdat', 'steps.fbdat', 'colors.json',
                             'FreeFormElements sólidos criados', 'individuais recebidos'):
                 assert literal.encode('utf-16le') in worker, literal
             assert 'model.skp'.encode('utf-16le') not in worker

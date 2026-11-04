@@ -106,9 +106,10 @@ function run() {
   }
   waitForJobs(app);
   // Revit merges bodies when a complete SAT is imported as one 3D shape.
-  // Move each source body into an identity occurrence in the root component
-  // and export that component. The moveToComponent contract preserves its
-  // assembly-space position; check this before accepting the isolated body.
+  // Copy each source body into an identity occurrence in the root component
+  // and export that component. Some imported STEP bodies trigger a Fusion
+  // cut_raw() validation error while moving, so only try move if copy fails.
+  // Both API operations preserve assembly-space position; verify it below.
   // The order here is the same as the colour manifest, so geometry and RGB
   // remain paired even when several bodies share the same generic name.
   if (sources.length > 256) throw Error("Too many solid bodies (maximum 256)");
@@ -123,15 +124,29 @@ function run() {
   stepChunks.push(stepHeader);
   let stepTotalSize = stepHeader.length;
   for (let i = 0; i < sources.length; i++) {
+    console.log(`Isolating body ${i + 1}/${sources.length}: ${bodies[i].name}`);
     const occurrence = root.occurrences.addNewComponent(adsk.core.Matrix3D.create());
     if (!occurrence) throw Error(`Cannot create identity occurrence for body ${i + 1}`);
-    const moved = sources[i].moveToComponent(occurrence);
-    if (!moved) throw Error(`Cannot isolate solid body ${i + 1} into a component`);
-    const isolated = record(moved);
+    let isolatedBody: adsk.fusion.BRepBody | null = null;
+    try {
+      isolatedBody = sources[i].copyToComponent(occurrence);
+    } catch (error) {
+      console.log(`Body ${i + 1}: copyToComponent failed: ${String(error)}`);
+    }
+    if (!isolatedBody) {
+      console.log(`Body ${i + 1}: trying moveToComponent fallback`);
+      try {
+        isolatedBody = sources[i].moveToComponent(occurrence);
+      } catch (error) {
+        throw Error(`Body ${i + 1}: copy and move isolation failed: ${String(error)}`);
+      }
+    }
+    if (!isolatedBody) throw Error(`Cannot isolate solid body ${i + 1} into a component`);
+    const isolated = record(isolatedBody);
     if (!isolated) throw Error(`Body ${i + 1} ceased to be solid during isolation`);
     assertSameAssemblyBox(bodies[i], isolated, i + 1);
     const filename = `part-${String(i + 1).padStart(4, "0")}.sat`;
-    const part = design.exportManager.createSATExportOptions(filename, moved.parentComponent);
+    const part = design.exportManager.createSATExportOptions(filename, isolatedBody.parentComponent);
     if (!part || !design.exportManager.execute(part)) throw Error(`SAT export failed for solid body ${i + 1}`);
     waitForJobs(app);
     const bytes = readFileSync(filename);
@@ -147,7 +162,7 @@ function run() {
     // Revit 2024.3 can import STEP directly when ACIS yields no usable Solid.
     // Export from the same isolated component to retain exact manifest order.
     const stepName = `part-${String(i + 1).padStart(4, "0")}.step`;
-    const step = design.exportManager.createSTEPExportOptions(stepName, moved.parentComponent);
+    const step = design.exportManager.createSTEPExportOptions(stepName, isolatedBody.parentComponent);
     if (!step || !design.exportManager.execute(step)) throw Error(`STEP export failed for solid body ${i + 1}`);
     waitForJobs(app);
     const stepBytes = readFileSync(stepName);

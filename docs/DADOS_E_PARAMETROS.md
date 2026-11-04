@@ -10,7 +10,7 @@ Criado automaticamente no pacote local. Exemplo fictício, sem credenciais:
 {
   "schema_version": 1,
   "output_name": "Torneira Exemplo.rfa",
-  "generator": {"name": "FamilyBridge", "version": "0.9.2", "author": "Yruam Käffer de Faria"},
+  "generator": {"name": "FamilyBridge", "version": "0.9.3", "author": "Yruam Käffer de Faria"},
   "product": {
     "manufacturer": "Fabricante Exemplo",
     "code": "EX-001",

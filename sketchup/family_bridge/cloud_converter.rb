@@ -97,7 +97,7 @@ module YruamKaffer
         unless ok
           begin
             File.write(File.join(@folder, 'aps-diagnostic.json'), JSON.pretty_generate({
-              'version' => '0.9.2', 'request' => @http_context, 'http_status' => @http_status,
+              'version' => '0.9.4', 'request' => @http_context, 'http_status' => @http_status,
               'message' => sanitize(message), 'job_id' => @job && @job['id'],
               'remote_state' => @job && @job['state']
             }), mode: 'w:UTF-8')

@@ -14,7 +14,7 @@ O RFA não é retrocompatível com Revit 2022. A disponibilidade de versões dos
 
 ## Instalação
 
-1. Baixe `FamilyBridge_v0.9.2.rbz` da entrega.
+1. Baixe `FamilyBridge_v0.9.3.rbz` da entrega.
 2. No SketchUp: **Janela → Gerenciador de Extensões → Instalar extensão**.
 3. Selecione o RBZ, aceite a instalação e abra o menu ou a barra de ferramentas **FamilyBridge**.
 4. Entre em **Configurações APS**. Informe Client ID e Client Secret da sua aplicação; Owner pode ficar vazio para usar o Client ID, e o alias padrão é `dev`. Clique **Salvar** e depois **Testar conexão**.

@@ -4,16 +4,16 @@
 
 ## Preparar o repositório GitHub
 
-Extraia `FamilyBridge_projeto_v0.9.2.zip` e coloque o **conteúdo** da pasta `FamilyBridge_v0.9.2` na raiz de um repositório próprio do FamilyBridge; não misture com os fontes do FreeCAD Bridge. Inclua `sketchup/family_bridge/resources/FamilyBridgeAutomation2024.bundle.zip` e `FamilyBridgeStepToSat.bundle.zip`: o RBZ depende deles. `LICENSE.txt` e `NOTICE.md` também integram o RBZ em `family_bridge/resources/`. Revise o histórico de commits e a área de staging para garantir que nenhum Client Secret, token, pacote de cliente ou relatório privado seja publicado.
+Extraia `FamilyBridge_projeto_v0.9.3.zip` e coloque o **conteúdo** da pasta `FamilyBridge_v0.9.3` na raiz de um repositório próprio do FamilyBridge; não misture com os fontes do FreeCAD Bridge. Inclua `sketchup/family_bridge/resources/FamilyBridgeAutomation2024.bundle.zip` e `FamilyBridgeStepToSat.bundle.zip`: o RBZ depende deles. `LICENSE.txt` e `NOTICE.md` também integram o RBZ em `family_bridge/resources/`. Revise o histórico de commits e a área de staging para garantir que nenhum Client Secret, token, pacote de cliente ou relatório privado seja publicado.
 
 ```sh
 git init
 git add .
 git status --short
-git commit -m "Adiciona FamilyBridge v0.9.2"
+git commit -m "Atualiza FamilyBridge v0.9.3"
 ```
 
-Crie o repositório na sua conta GitHub e configure o remoto conforme a URL exibida lá. Este projeto não escolhe licença automaticamente; veja `NOTICE.md`.
+Crie o repositório na sua conta GitHub e configure o remoto conforme a URL exibida lá. O código original usa a licença PolyForm Noncommercial 1.0.0; veja `LICENSE.txt` e `NOTICE.md`.
 
 ## Testes locais
 
@@ -34,7 +34,7 @@ ruby tests/test_cloud_converter.rb
 python3 build_release.py --output dist
 ```
 
-O script produz `FamilyBridge_v0.9.2.rbz` na raiz e `dist/FamilyBridge_projeto_v0.9.2.zip`. O RBZ inclui os arquivos de `sketchup/` e as cópias da licença e do aviso; o ZIP contém documentação, fontes, testes, bundles e o próprio RBZ. O empacotador usa uma lista explícita de arquivos para evitar credenciais, saídas de jobs e caches. Confira sempre `unzip -l` ou equivalente antes de publicar.
+O script produz `FamilyBridge_v0.9.3.rbz` na raiz e `dist/FamilyBridge_projeto_v0.9.3.zip`. O RBZ inclui os arquivos de `sketchup/` e as cópias da licença e do aviso; o ZIP contém documentação, fontes, testes, bundles e o próprio RBZ. O empacotador usa uma lista explícita de arquivos para evitar credenciais, saídas de jobs e caches. Confira sempre `unzip -l` ou equivalente antes de publicar.
 
 ## Alterar os workers
 
@@ -54,3 +54,10 @@ Execute os quatro comandos de teste, gere e examine os arquivos de distribuiçã
 - [Documentação APS](https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/overview/)
 - [SketchUp Ruby API](https://ruby.sketchup.com/)
 - [Revit API Developer Guide](https://www.autodesk.com/developer-network/platform-technologies/revit)
+
+
+## Build do worker Revit 2024 (v0.9.4)
+
+Envie o conteúdo do projeto para o GitHub e execute **Actions → Build FamilyBridge 2024 → Run workflow**. O runner Windows restaura as referências .NET Framework e Revit 2024 para compilação, extrai o DesignAutomationBridge.dll já licenciado do AppBundle existente, compila `aps/revit2024/FamilyBridge.Automation.csproj`, substitui o DLL no AppBundle e cria um artifact com o RBZ instalável e o ZIP do projeto. A referência RevitAPI.dll é só de build e não vai para o RBZ.
+
+**Não instale nem publique o AppBundle presente no ZIP de código-fonte antes do workflow:** ele é o binário anterior. Instale apenas `FamilyBridge_v0.9.4.rbz` obtido no artifact após um workflow concluído com sucesso. Confirme a linha `worker 0.9.4 solid-first STEP retry RGB` no relatório do próximo job APS. Para a peça 2 do modelo de 15 corpos, confira se o relatório registra a tentativa STEP e um sólido aprovado ou uma malha individual validada; sem isso, o RFA continua pendente.

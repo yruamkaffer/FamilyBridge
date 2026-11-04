@@ -1,3 +1,9 @@
+## 0.9.3 — 04/11/2026
+
+- Um novo STEP parou no Fusion Automation com `InternalValidationError : cut_raw()` na chamada `moveToComponent`; nenhum `colors.json` ou RFA foi produzido.
+- O worker Fusion tenta `copyToComponent` primeiro e só usa `moveToComponent` se a cópia falhar. Registra o índice do corpo antes da operação e conserva a verificação de caixa e volume depois do isolamento.
+- O worker Revit e seus limites geométricos permanecem na versão compilada 0.9.2. A nova rota Fusion requer um job real para validação; não reenvie a pasta que contém um recibo de job com falha.
+
 ## 0.9.2 — 23/10/2026
 
 - Validação posterior à distribuição: dois modelos concluíram Fusion e Revit na APS, baixaram RFAs com nove corpos de origem; o usuário abriu um deles no Revit e confirmou a aparência geral. A inspeção dos STEP revelou divergência no volume calculado para a peça 8, apesar de área e dimensões quase iguais. Ver `docs/VALIDACAO_APS.md`. Esta atualização acrescenta documentação e avisos de licença ao RBZ; não altera os workers.
@@ -110,3 +116,9 @@
 ## 0.1.0 — 20/10/2026
 
 - Protótipo SketchUp com formulário BIM, exportação SKP 2020 e JSON.
+## 0.9.4 — 04/11/2026
+
+- O worker tenta o STEP do corpo se o SAT importar como sólido, mas reprovar a validação de volume ou dimensões; um STEP sem sólido único pode seguir como malha somente após validar sua geometria.
+- Adicionados projeto .NET Framework 4.8 e workflow Windows para compilar o worker e criar os arquivos de distribuição com o DLL atualizado.
+- **Pendente:** compilar e executar um WorkItem APS com o pacote de 15 corpos. O AppBundle embutido no código antes do build ainda contém o worker anterior.
+

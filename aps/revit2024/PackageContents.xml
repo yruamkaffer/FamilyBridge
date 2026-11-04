@@ -2,6 +2,6 @@
 <ApplicationPackage Name="FamilyBridgeAutomation2024" Description="FamilyBridge Revit 2024 SAT" Author="Yruam Käffer de Faria">
   <Components Description="FamilyBridge SAT to RFA">
     <RuntimeRequirements SeriesMin="R2024" SeriesMax="R2024" Platform="Revit" OS="Win64"/>
-    <ComponentEntry LoadOnRevitStartup="True" LoadOnCommandInvocation="False" AppDescription="FamilyBridge 2024 RFA generator" ModuleName="./Contents/FamilyBridge.addin" Version="0.8.1" AppName="FamilyBridgeAutomation2024"/>
+    <ComponentEntry LoadOnRevitStartup="True" LoadOnCommandInvocation="False" AppDescription="FamilyBridge 2024 RFA generator" ModuleName="./Contents/FamilyBridge.addin" Version="0.9.4" AppName="FamilyBridgeAutomation2024"/>
   </Components>
 </ApplicationPackage>

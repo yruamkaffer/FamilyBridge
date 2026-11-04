@@ -10,7 +10,7 @@ require_relative 'cloud_converter'
 
 module YruamKaffer
   module FamilyBridge
-    VERSION = '0.9.2' unless const_defined?(:VERSION)
+    VERSION = '0.9.4' unless const_defined?(:VERSION)
     DICT = 'YruamKaffer_FamilyBridge' unless const_defined?(:DICT)
     FIELDS = %w[manufacturer code name collection finish description website category].freeze unless const_defined?(:FIELDS)
 

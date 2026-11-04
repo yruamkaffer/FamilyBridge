@@ -3,7 +3,7 @@ from pathlib import Path
 import zipfile
 
 BASE = Path(__file__).resolve().parent
-VERSION = '0.9.2'
+VERSION = '0.9.4'
 
 
 def build(destination):

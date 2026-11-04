@@ -2,6 +2,10 @@
 
 [Início](../README.md) · [Arquitetura](ARQUITETURA.md)
 
+## Falha `InternalValidationError : cut_raw()` no Fusion
+
+Um STEP real fez a v0.9.2 falhar ao executar `moveToComponent` no worker Fusion. O aviso `colors.json` ausente é consequência dessa interrupção, não um erro de configuração do formulário. A v0.9.3 tenta `copyToComponent` primeiro, mantendo a posição do conjunto e as verificações de volume e dimensões; só recorre ao movimento se a cópia falhar. O relatório agora indica o índice do corpo antes da tentativa. **A correção precisa ser testada na APS com o STEP afetado.** Instale o RBZ novo e execute uma conversão completa em uma pasta nova; o pacote com `aps-job.json` falho não contém os sólidos isolados necessários para reprocessar somente o Revit.
+
 ## Primeiros passos
 
 1. Registre a mensagem exibida no painel e localize a pasta do pacote. Não clique novamente para gerar na mesma pasta enquanto houver recibos.
