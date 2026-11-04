@@ -33,9 +33,9 @@ jobs:
           if (-not (Test-Path .gitignore)) { New-Item -ItemType File .gitignore | Out-Null }
           python build_release.py --output dist
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - uses: actions/upload-artifact@v4
+           - uses: actions/upload-artifact@v4
         with:
           name: FamilyBridge-v0.9.5
-path: |
-  dist/FamilyBridge_projeto_v0.9.5.zip
-  FamilyBridge_v0.9.5.rbz
+          path: |
+            dist/FamilyBridge_projeto_v0.9.5.zip
+            FamilyBridge_v0.9.5.rbz
