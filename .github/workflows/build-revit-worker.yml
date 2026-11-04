@@ -27,6 +27,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           python aps/revit2024/package_bundle.py --dll aps/revit2024/bin/Release/net48/FamilyBridge.Automation.dll --bridge build/refs/DesignAutomationBridge.dll --output sketchup/family_bridge/resources/FamilyBridgeAutomation2024.bundle.zip
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path aps/fusion/FamilyBridgeStepToSat -DestinationPath sketchup/family_bridge/resources/FamilyBridgeStepToSat.bundle.zip -Force
           python tests/test_bundle.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python build_release.py --output dist
