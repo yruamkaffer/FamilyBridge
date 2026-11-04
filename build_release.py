@@ -3,7 +3,7 @@ from pathlib import Path
 import zipfile
 
 BASE = Path(__file__).resolve().parent
-VERSION = '0.9.4'
+VERSION = '0.9.5'
 
 
 def build(destination):
@@ -20,8 +20,10 @@ def build(destination):
     output = destination / ('FamilyBridge_projeto_v' + VERSION + '.zip')
     # Allowlist keeps local configuration, test caches and job receipts private.
     paths = [BASE / name for name in ('README.md', 'README.en.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
-                                      'SECURITY.md', 'LICENSE.txt', 'NOTICE.md', '.gitignore',
+                                      'SECURITY.md', 'LICENSE.txt', 'NOTICE.md', 'PUBLICAR_NO_GITHUB.md', '.gitignore',
                                       'build_release.py', rbz.name)]
+    paths = [path for path in paths if path.is_file()]
+    paths.append(BASE / '.github/workflows/build-revit-worker.yml')
     for root in ('sketchup', 'tests', 'aps', 'docs'):
         paths += [p for p in (BASE / root).rglob('*') if p.is_file()
                   and p.suffix in ('.py', '.rb', '.html', '.cs', '.csproj', '.addin', '.xml', '.ps1', '.md', '.png', '.js', '.ts', '.txt', '.yml')

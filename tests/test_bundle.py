@@ -42,7 +42,7 @@ for resource, required in (
             worker = bundle.read(required)
             # The previous release accidentally shipped a 0.5.0 DLL that read
             # model.skp, although source and Activity already passed model.sat.
-            for literal in ('worker 0.9.4 solid-first STEP retry RGB', 'bodies.fbdat', 'steps.fbdat', 'colors.json',
+            for literal in ('worker 0.9.5 solid-first STEP retry RGB', 'bodies.fbdat', 'steps.fbdat', 'colors.json',
                             'FreeFormElements sólidos criados', 'individuais recebidos'):
                 assert literal.encode('utf-16le') in worker, literal
             assert 'model.skp'.encode('utf-16le') not in worker

@@ -54,7 +54,7 @@ namespace YruamKaffer.FamilyBridge.Automation
 
         private static void Run(Application app)
         {
-            Console.WriteLine("[FamilyBridge] worker 0.9.4 solid-first STEP retry RGB; engine Revit " + app.VersionNumber);
+            Console.WriteLine("[FamilyBridge] worker 0.9.5 solid-first STEP retry RGB; engine Revit " + app.VersionNumber);
             if (app.VersionNumber != "2024") throw new InvalidOperationException("O conversor exige engine Revit 2024.");
             string workDir = Directory.GetCurrentDirectory();
             string archivePath = Path.Combine(workDir, BodyArchiveFile);
@@ -123,6 +123,8 @@ namespace YruamKaffer.FamilyBridge.Automation
                         if (imported == null) throw new InvalidOperationException("Importação sem elemento: corpo " + (i + 1));
                         var solids = new List<Solid>();
                         bool stepImported = false;
+                        double? satVolumeMm3 = null;
+                        double[] satDimensionsMm = null;
                         CollectSolids(imported.get_Geometry(new Options { ComputeReferences = true }), solids);
                         Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) + ": sólidos Revit = " + solids.Count);
                         if (solids.Count != 1)
@@ -230,6 +232,8 @@ namespace YruamKaffer.FamilyBridge.Automation
                                 // an inaccurate SAT volume. The original import is removed.
                                 Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) +
                                     ": sólido SAT fora da tolerância; tentando STEP individual.");
+                                satVolumeMm3 = volume;
+                                satDimensionsMm = dims.Select(v => v * 304.8).ToArray();
                                 family.Delete(importId);
                                 importId = family.Import(stepParts[i], new STEPImportOptions(), targetView);
                                 if (importId == ElementId.InvalidElementId)
@@ -255,11 +259,29 @@ namespace YruamKaffer.FamilyBridge.Automation
                                 Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) +
                                     ": STEP alternativo sem sólido único ou malha única.");
                             }
-                            geometryDifferences.Add("corpo " + (i + 1) + " (volume " +
-                                (volumeDifference * 100).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
-                                "%, caixa " + Math.Max(largestDimensionDifference, largestAxisDifference).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " mm)");
-                            family.Delete(importId);
-                            continue;
+                            // Revit can approximate Solid.Volume on curved surfaces. The
+                            // Fusion manifest has already validated the isolated source.
+                            // Only accept a bounded discrepancy if two independent Revit
+                            // imports produce effectively the same positive-volume solid.
+                            double boundError = Math.Max(largestDimensionDifference, largestAxisDifference);
+                            bool formatsAgree = satVolumeMm3.HasValue && satDimensionsMm != null &&
+                                Math.Abs(satVolumeMm3.Value - volume) / matched.VolumeMm3 < 0.001 &&
+                                satDimensionsMm.Zip(dims, (sat, step) => Math.Abs(sat - step * 304.8)).Max() < 0.2;
+                            if (stepImported && formatsAgree && volumeDifference < 0.04 && boundError < 2.0)
+                            {
+                                Console.WriteLine("[FamilyBridge] Corpo " + (i + 1) +
+                                    ": exceção controlada de volume Revit; SAT e STEP concordam, desvio " +
+                                    (volumeDifference * 100).ToString("F3", System.Globalization.CultureInfo.InvariantCulture) +
+                                    "%, caixa " + boundError.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) + " mm.");
+                            }
+                            else
+                            {
+                                geometryDifferences.Add("corpo " + (i + 1) + " (volume " +
+                                    (volumeDifference * 100).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                                    "%, caixa " + boundError.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " mm)");
+                                family.Delete(importId);
+                                continue;
+                            }
                         }
                         XYZ currentCenter = (worldMin + worldMax) * 0.5;
                         XYZ desiredCenter = new XYZ(

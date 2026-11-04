@@ -56,8 +56,8 @@ Execute os quatro comandos de teste, gere e examine os arquivos de distribuiçã
 - [Revit API Developer Guide](https://www.autodesk.com/developer-network/platform-technologies/revit)
 
 
-## Build do worker Revit 2024 (v0.9.4)
+## Build do worker Revit 2024 (v0.9.5)
 
 Envie o conteúdo do projeto para o GitHub e execute **Actions → Build FamilyBridge 2024 → Run workflow**. O runner Windows restaura as referências .NET Framework e Revit 2024 para compilação, extrai o DesignAutomationBridge.dll já licenciado do AppBundle existente, compila `aps/revit2024/FamilyBridge.Automation.csproj`, substitui o DLL no AppBundle e cria um artifact com o RBZ instalável e o ZIP do projeto. A referência RevitAPI.dll é só de build e não vai para o RBZ.
 
-**Não instale nem publique o AppBundle presente no ZIP de código-fonte antes do workflow:** ele é o binário anterior. Instale apenas `FamilyBridge_v0.9.4.rbz` obtido no artifact após um workflow concluído com sucesso. Confirme a linha `worker 0.9.4 solid-first STEP retry RGB` no relatório do próximo job APS. Para a peça 2 do modelo de 15 corpos, confira se o relatório registra a tentativa STEP e um sólido aprovado ou uma malha individual validada; sem isso, o RFA continua pendente.
+**Não instale nem publique o AppBundle presente no ZIP de código-fonte antes do workflow:** ele é o binário anterior. Instale apenas `FamilyBridge_v0.9.5.rbz` obtido no artifact após um workflow concluído com sucesso. Confirme a linha `worker 0.9.5 solid-first STEP retry RGB` no relatório do próximo job APS. Para a peça 2 do modelo de 15 corpos, confira se o relatório registra a tentativa STEP e um sólido aprovado ou uma malha individual validada; sem isso, o RFA continua pendente.

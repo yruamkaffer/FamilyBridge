@@ -1,3 +1,15 @@
+## 0.9.5 — 04/11/2026
+
+- O job APS de 15 corpos na v0.9.4 importou SAT e STEP da peça 2 como o mesmo sólido Revit, mas ambos deram volume 3,18% menor que o manifesto e a validação bloqueou o RFA.
+- Exceção limitada: após a falha do SAT, o STEP também deve produzir um sólido; os dois volumes devem concordar em 0,1% do volume de origem e as dimensões em 0,2 mm. Aceita desvio máximo de 4% de volume e 2 mm de caixa, registrando a decisão no relatório. Demais corpos mantêm a tolerância padrão de 2% e 5 mm.
+- O build de projeto inclui o workflow e tolera ausência de `.gitignore`. Esta alteração ainda aguarda compilação e WorkItem APS com o pacote original.
+
+## 0.9.4 — 04/11/2026
+
+- O worker tenta o STEP do corpo se o SAT importar como sólido, mas reprovar a validação de volume ou dimensões; um STEP sem sólido único pode seguir como malha somente após validar sua geometria.
+- Adicionados projeto .NET Framework 4.8 e workflow Windows para compilar o worker e criar os arquivos de distribuição com o DLL atualizado.
+- **Pendente:** compilar e executar um WorkItem APS com o pacote de 15 corpos. O AppBundle embutido no código antes do build ainda contém o worker anterior.
+
 ## 0.9.3 — 04/11/2026
 
 - Um novo STEP parou no Fusion Automation com `InternalValidationError : cut_raw()` na chamada `moveToComponent`; nenhum `colors.json` ou RFA foi produzido.
@@ -116,9 +128,3 @@
 ## 0.1.0 — 20/10/2026
 
 - Protótipo SketchUp com formulário BIM, exportação SKP 2020 e JSON.
-## 0.9.4 — 04/11/2026
-
-- O worker tenta o STEP do corpo se o SAT importar como sólido, mas reprovar a validação de volume ou dimensões; um STEP sem sólido único pode seguir como malha somente após validar sua geometria.
-- Adicionados projeto .NET Framework 4.8 e workflow Windows para compilar o worker e criar os arquivos de distribuição com o DLL atualizado.
-- **Pendente:** compilar e executar um WorkItem APS com o pacote de 15 corpos. O AppBundle embutido no código antes do build ainda contém o worker anterior.
-

@@ -2,7 +2,7 @@
 
 Extensão para SketchUp que transforma um **STEP sólido** em uma família **RFA 2024** pela Autodesk Platform Services (APS). O painel coleta informações BIM, guarda os dados no modelo SketchUp e coordena dois trabalhos em nuvem: Fusion Automation exporta SAT e STEP isolados com RGB por corpo; Revit Automation 2024 tenta importar cada corpo como sólido, com fallback de malha apenas para o corpo que não produzir um sólido, e cria materiais e parâmetros de família.
 
-**Versão:** 0.9.4 · **Autor:** Yruam Kaffer de Faria · **Idioma da interface:** português.
+**Versão:** 0.9.5 · **Autor:** Yruam Kaffer de Faria · **Idioma da interface:** português.
 
 [English](README.en.md) · [Instalação](docs/INSTALACAO_E_USO.md) · [Diagnóstico](docs/DIAGNOSTICO.md) · [Arquitetura](docs/ARQUITETURA.md) · [Licença](LICENSE.txt)
 
@@ -10,12 +10,12 @@ Extensão para SketchUp que transforma um **STEP sólido** em uma família **RFA
 
 > **Histórico 0.9.3:** um STEP adicional parou no Fusion ao mover um corpo (`cut_raw()`). Esta versão tenta copiar antes de mover e registra o índice da peça. A correção ainda não foi executada na APS com esse STEP; veja [Diagnóstico](docs/DIAGNOSTICO.md).
 
-> **Atualização 0.9.4:** o worker tenta STEP quando o sólido SAT reprova a validação. O pacote instalável v0.9.4 só é produzido após a compilação Windows; confira o resultado do workflow antes de instalar. A execução APS de 15 corpos ainda precisa ser repetida.
+> **Atualização 0.9.5:** no modelo de 15 corpos, a v0.9.4 processou todos, mas não gerou RFA porque o sólido do corpo 2 teve desvio de volume de 3,18% no Revit em SAT e STEP. A v0.9.5 aceita esse sólido somente se ambas as importações concordarem (0,1% no volume, 0,2 mm nas dimensões), com desvio até 4% do manifesto e 2 mm na caixa. O novo build e o job APS ainda precisam ser executados; veja [Validação](docs/VALIDACAO_APS.md).
 
 ## Comece aqui
 
 1. Tenha SketchUp com suporte a extensões Ruby e acesso à sua aplicação APS com Design Automation habilitada para `Autodesk.Fusion+Latest` e `Autodesk.Revit+2024`. Consulte limites e cobrança atuais no portal APS antes de enviar trabalhos.
-2. No SketchUp, abra **Janela → Gerenciador de Extensões → Instalar extensão** e selecione `FamilyBridge_v0.9.4.rbz`.
+2. No SketchUp, abra **Janela → Gerenciador de Extensões → Instalar extensão** e selecione `FamilyBridge_v0.9.5.rbz`.
 3. Abra **FamilyBridge → Configurações APS**, informe Client ID e Client Secret, salve e teste a conexão. A opção **Lembrar segredo** usa DPAPI no Windows; em outros sistemas, use o segredo somente na sessão.
 4. Abra o SKP correspondente ao produto. No painel FamilyBridge, escolha um arquivo `.step` ou `.stp` sólido, preencha **código**, **nome** e, se desejar, fabricante, linha, acabamento, descrição, site e categoria.
 5. Clique **Gerar RFA na APS** e escolha a pasta de destino. Aguarde a conclusão dos dois trabalhos. O arquivo final recebe o nome do SKP salvo; se o modelo não tiver nome salvo, usa código e produto.
@@ -52,7 +52,7 @@ O fluxo não cria conectores MEP, cotas paramétricas, tipos de família alterna
 | `docs/` | Guias técnicos e operacionais |
 | `build_release.py` | Recria o RBZ e o ZIP de projeto |
 
-Para instalar, use o **RBZ**, não o ZIP do projeto. Para publicar o código no GitHub, crie um repositório específico para FamilyBridge, extraia o ZIP e envie **o conteúdo da pasta `FamilyBridge_v0.9.4`** para a raiz. Preserve `LICENSE.txt`, `NOTICE.md`, os AppBundles e o RBZ. Não envie STEP/SKP/RFA de clientes, pacotes de conversão, segredos ou relatórios de jobs. Consulte [Desenvolvimento](docs/DESENVOLVIMENTO.md) para os comandos sugeridos.
+Para instalar, use o **RBZ**, não o ZIP do projeto. Para publicar o código no GitHub, crie um repositório específico para FamilyBridge, extraia o ZIP e envie **o conteúdo da pasta `FamilyBridge_v0.9.5`** para a raiz. Preserve `LICENSE.txt`, `NOTICE.md`, `.github/workflows/` e os AppBundles. O ZIP de fonte contém o AppBundle da versão anterior apenas como referência para o build: obtenha o RBZ v0.9.5 somente no artifact do workflow após compilação verde. Não envie STEP/SKP/RFA de clientes, pacotes de conversão, segredos ou relatórios de jobs. Consulte [Desenvolvimento](docs/DESENVOLVIMENTO.md) para os comandos sugeridos.
 
 ## Desenvolvimento rápido
 
