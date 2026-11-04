@@ -1,0 +1,39 @@
+name: Build FamilyBridge 2024
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'aps/revit2024/**'
+      - '.github/workflows/build-revit-worker.yml'
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Extract Autodesk bridge from existing bundle
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/refs | Out-Null
+          Expand-Archive sketchup/family_bridge/resources/FamilyBridgeAutomation2024.bundle.zip build/old
+          Copy-Item build/old/FamilyBridgeAutomation.bundle/Contents/DesignAutomationBridge.dll build/refs/DesignAutomationBridge.dll
+      - name: Compile Revit 2024 worker
+        run: dotnet build aps/revit2024/FamilyBridge.Automation.csproj -c Release --nologo
+      - name: Replace bundled worker and build release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python aps/revit2024/package_bundle.py --dll aps/revit2024/bin/Release/net48/FamilyBridge.Automation.dll --bridge build/refs/DesignAutomationBridge.dll --output sketchup/family_bridge/resources/FamilyBridgeAutomation2024.bundle.zip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tests/test_bundle.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python build_release.py --output dist
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FamilyBridge-v0.9.4
+          path: |
+            dist/FamilyBridge_projeto_v0.9.4.zip
+            FamilyBridge_v0.9.4.rbz
